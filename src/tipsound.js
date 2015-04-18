@@ -65,6 +65,178 @@ var memoizer = function (memo, fundamental) {
     return shell;
 };
 
+var chordDegree = {
+    perfect1: 0,
+    minor2:   1,
+    major2:   2,
+    minor3:   3,
+    major3:   4,
+    perfect4: 5,
+    aug4: 6,
+    dim5: 6,
+    perfect5: 7,
+    aug5: 8,
+    minor6: 8,
+    major6: 9,
+    minor7: 10,
+    major7: 11,
+    C: -8,
+    D: -6,
+    E: -4,
+    F: -3,
+    G: -1,
+    A: 0,
+    B: 2
+}
+
+var parseChord = function(chord)
+{
+    var st = 0; // state
+    var pos = 0;
+
+    var root;
+    var third = "major3";   // ad-hock: to be fixed
+    var fifth = "perfect5"; // ad-hock: to be fixed
+    var seventh;
+
+    while(pos < chord.length)
+    {
+        switch(st)
+        {
+            case 0:     // root note
+                root = chord[pos++];
+                st = 1; // to 3rd
+                break;
+
+            case 1: // 3rd
+                if (chord[pos] == "m") {    // minor
+                    pos++;
+                    third = "minor3";
+                } else {
+                    third = "major3";
+                }
+                st = 2; // to 7th
+                break;
+            case 2: // 7th
+                if (chord[pos] == "M") {    // maybe major 7th
+                    pos++;
+                    st = 3; // check if it is major 7th
+                } else if (chord[pos] == "7") {  // minor 7th
+                    pos++;
+                    seventh = "minor7";
+                    st = 4; // check sus4
+                } else if (chord[pos] == "6") {  // major 6th
+                    pos++;
+                    seventh = "major6";
+                    st = 4; // check sus4
+                } else {
+                    st = 4; // check sus4
+                }
+                break;
+            case 3: // major 7th
+                if (chord[pos] == "7") {    // major 7th
+                    pos++;
+                    seventh = "major7";
+                } else {
+                    throw new Error("parse error.");
+                }
+                st = 4;     // check sus4
+                break;
+            case 4: // sus4-1:s
+                if (chord[pos] == "s") {
+                    pos++;
+                    st = 5;     // sus4-2:u
+                } else {
+                    st = 8;     // 5th
+                }
+                break;
+            case 5: // sus4-2:u
+                if (chord[pos] == "u") {
+                    pos++;
+                    st = 6;
+                } else {
+                    throw new Error("parse error.");
+                }
+                break;
+            case 6: // sus4-2:s
+                if (chord[pos] == "s") {
+                    pos++;
+                    st = 7;
+                } else {
+                    throw new Error("parse error.");
+                }
+                break;
+            case 7: // sus4-2:4
+                if (chord[pos] == "4") {
+                    pos++;
+                    third = "perfect4";
+                    st = 8;
+                } else {
+                    throw new Error("parse error.");
+                }
+                break;
+            case 8: // 5th
+                if (chord[pos] == "(") {    // 5th, 9th, 11th exists
+                    pos++;
+                    st = 9;
+                } else {
+                    fifth = "perfetc5";
+                    st = 13;                // on-code
+                }
+                break;
+            case 9: // aug or dim
+                if (chord[pos] == "+") {    // aug
+                    pos++;
+                    st = 10;
+                } else if(chord[pos] == "-") { // dim
+                    pos++;
+                    st = 11;
+                } else {    // 7th
+                    throw new Error("7th, 9th is not implemented yet.");
+                }
+                break;
+            case 10: // aug
+                if(chord[pos] == "5") { // aug5
+                    pos++;
+                    fifth = "aug5";
+                    st = 12;  // ")"
+                } else {    // maybe aug7
+                    fifth = "perfect5";
+                    st = 12;  // ")"
+                }
+                break;
+            case 11: // dim
+                if(chord[pos] == "5") { // dim7
+                    pos++;
+                    fifth = "dim5";
+                    st = 12;  // 7th
+                } else {
+                    throw new Error("7th, 9th is not implemented yet.");
+                    fifth = "perfect5";
+                    st = 12;
+                }
+                break;
+            case 12: // ")"
+                if(chord[pos] == ")") {
+                    pos++;
+                    st = 13;
+                } else {
+                    throw new Error("parse error");
+                }
+                break;
+            case 13: // on-code
+                throw new Error("on-code is not implemented yet.");
+                break;
+            default:
+                throw new Error("parser internal error.");
+                break;
+        
+        }
+    }
+
+    return [root, ["perfect1", third, fifth, seventh]];
+}
+
 
 function constant(v)
 {
@@ -139,7 +311,11 @@ var tipsound = function(srate)
 
     that.osc_saw = function (freq)
     {
-        return function (t) { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); }
+        if (freq(0) == null) {
+            return function (t) { return 0; };
+        } else {
+            return function (t) { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); }
+        }
     }
 
     that.sequence_freq = function (seq, bmp)
@@ -164,4 +340,9 @@ var ts = tipsound();
 //document.querySelector("#play").addEventListener("click", function () { ts.play(ts.osc_saw(constant(440 / 2)), 1.0); }, false);
 //document.querySelector("#play").addEventListener("click", function () { ts.play(mix(ts.osc_saw(constant(note(25))), ts.osc_saw(constant(note(25+4))), ts.osc_saw(constant(note(25+4+3)))), 1.0); }, false);
 
-document.querySelector("#play").addEventListener("click", function () { ts.play(ts.osc_saw(ts.sequence_freq([5, 25, 5, 25, 4, 16, 13, 4], 120)), 1.0); }, false);
+//document.querySelector("#play").addEventListener("click", function () { ts.play(ts.osc_saw(ts.sequence_freq([5, 25, 5, 25, 4, 16, 13, 4], 120)), 1.0); }, false);
+
+var r = parseChord("C");
+var p = map.call(r[1], function (x) { return ts.osc_saw(constant(x === undefined ? null : note(chordDegree[x].integer() + 33 + chordDegree[r[0]]))); })
+
+document.querySelector("#play").addEventListener("click", function () { ts.play(mix.apply(this, p), 1.0); }, false);
