@@ -4,11 +4,26 @@
 var map = Array.prototype.map;
 var reduce = Array.prototype.reduce;
 
+function mapcar(fn, lists) // ad-hock: assume all list lengths are the same. maybe fixed after.
+{
+    var r = [];
+    for (var i = 0; i < lists[0].length; i++) {
+        var tr = [];
+        for (var j = 0; j < lists.length; j++) {
+            tr.push(lists[j][i]);
+        }
+        r.push(fn.apply(this, tr));
+    }
+
+    return r;
+}
+
 function compose(f,g) {
     return function() {
         return f.call(this, g.apply(this, arguments));
     };
 }
+
 
 function inherit(p) {
     if (p == null) throw TypeError();
@@ -234,7 +249,7 @@ var parseChord = function(chord)
         }
     }
 
-    return [root, ["perfect1", third, fifth, seventh]];
+    return { "root": root, offset: ["perfect1", third, fifth, seventh] };
 }
 
 
@@ -269,8 +284,8 @@ function mix() {
     }
 }
 
-function note(n, octave) {
-    return Math.pow(2, (n - 33 + (12 * (octave || 0))) / 12) * 440;
+function note(n) {
+    return Math.pow(2, (n - 33) / 12) * 440;
 }
 
 var tipsound = function(srate)
@@ -303,6 +318,8 @@ var tipsound = function(srate)
         src.connect(this.context.destination);
 
         src.start(this.context.currentTime);
+
+        return that;
     }
 
     that.osc_sin = function (freq) {
@@ -318,31 +335,39 @@ var tipsound = function(srate)
         }
     }
 
-    that.sequence_freq = function (seq, bmp)
+    that.sequence_freq = function (seq, bpm)
     {
-        var nt = srate * 60 / (bmp * 4); // 1/4
+        var nt = srate * 60 / bpm;
 
-        return function (t) { var p = t / nt; return note(seq[(p % seq.length).integer()]); }
+        return function (t) { var p = t / nt; return seq[(p % seq.length).integer()]; }
+    }
+
+    function chordToNote(chord)
+    {
+        var root = chordDegree[chord.root];
+        return chord.offset.map(function (x) { return x === undefined ? null : note(chordDegree[x].integer() + 33 + root); });
+    }
+
+    that.chordToSequence = function()
+    {
+        return mapcar(function() { return arguments; }, map.call(arguments, compose(chordToNote, parseChord)));
+    }
+
+    that.buildSynth = function(seq, bpm)
+    {
+        return mix.apply(that, seq.map(function (x) { return that.osc_saw(that.sequence_freq(x, bpm)); }))
+    }
+
+    that.playChord = function()
+    {
+        // in 60bmp
+        return that.play(that.buildSynth(that.chordToSequence.apply(this, arguments), 60), arguments.length);
     }
 
     return that;
 }
 
 
-
-
-
-
-
 var ts = tipsound();
-//document.querySelector("#play").addEventListener("click", function () { ts.play(mix(osc_sin(constant(440), constant(44100)), osc_sin(constant(440 * 1.26), constant(44100)), osc_sin(constant(440 * 1.498), constant(44100))), 1.0); }, false);
-//document.querySelector("#play").addEventListener("click", function () { ts.play(mix(ts.osc_saw(constant(440)), ts.osc_saw(constant(440*1.26)), ts.osc_saw(constant(440*1.498))), 1.0); }, false);
-//document.querySelector("#play").addEventListener("click", function () { ts.play(ts.osc_saw(constant(440 / 2)), 1.0); }, false);
-//document.querySelector("#play").addEventListener("click", function () { ts.play(mix(ts.osc_saw(constant(note(25))), ts.osc_saw(constant(note(25+4))), ts.osc_saw(constant(note(25+4+3)))), 1.0); }, false);
 
-//document.querySelector("#play").addEventListener("click", function () { ts.play(ts.osc_saw(ts.sequence_freq([5, 25, 5, 25, 4, 16, 13, 4], 120)), 1.0); }, false);
-
-var r = parseChord("C");
-var p = map.call(r[1], function (x) { return ts.osc_saw(constant(x === undefined ? null : note(chordDegree[x].integer() + 33 + chordDegree[r[0]]))); })
-
-document.querySelector("#play").addEventListener("click", function () { ts.play(mix.apply(this, p), 1.0); }, false);
+document.querySelector("#play").addEventListener("click", function () { ts.playChord("C", "G7", "C"); }, false);
