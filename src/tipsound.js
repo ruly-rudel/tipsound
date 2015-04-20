@@ -95,11 +95,11 @@ var chordDegree = {
     major6: 9,
     minor7: 10,
     major7: 11,
-    C: -8,
-    D: -6,
-    E: -4,
-    F: -3,
-    G: -1,
+    C: -9,
+    D: -7,
+    E: -5,
+    F: -4,
+    G: -2,
     A: 0,
     B: 2
 }
@@ -284,6 +284,11 @@ function mix() {
     }
 }
 
+function root()
+{
+    return arguments[0];
+}
+
 function note(n) {
     return Math.pow(2, (n - 33) / 12) * 440;
 }
@@ -328,11 +333,7 @@ var tipsound = function(srate)
 
     that.osc_saw = function (freq)
     {
-        if (freq(0) == null) {
-            return function (t) { return 0; };
-        } else {
-            return function (t) { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); }
-        }
+        return function (t) { if (freq(t) == null) { return 0; }  else { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); } }
     }
 
     that.sequence_freq = function (seq, bpm)
@@ -342,15 +343,31 @@ var tipsound = function(srate)
         return function (t) { var p = t / nt; return seq[(p % seq.length).integer()]; }
     }
 
-    function chordToNote(chord)
+    that.chordToNote = function(chord)
     {
         var root = chordDegree[chord.root];
         return chord.offset.map(function (x) { return x === undefined ? null : note(chordDegree[x].integer() + 33 + root); });
     }
 
-    that.chordToSequence = function()
+    that.closedVoicing = function (chord) {
+        var root = chordDegree[chord.root];
+        return chord.offset.map(function (x) {
+            if (x === undefined) {
+                return null;
+            } else {
+                var cd = chordDegree[x].integer() + 33 + root;
+                if (cd > 35) {
+                    cd -= 12;
+                }
+                return note(cd);
+            }
+        });
+    }
+
+
+    that.chordToSequence = function(chords, voicing)
     {
-        return mapcar(function() { return arguments; }, map.call(arguments, compose(chordToNote, parseChord)));
+        return mapcar(function() { return arguments; }, map.call(chords, compose(voicing, parseChord)));
     }
 
     that.buildSynth = function(seq, bpm)
@@ -358,10 +375,11 @@ var tipsound = function(srate)
         return mix.apply(that, seq.map(function (x) { return that.osc_saw(that.sequence_freq(x, bpm)); }))
     }
 
-    that.playChord = function()
+    that.playChord = function(c)
     {
+        var ca = c.split(/\s/);
         // in 60bmp
-        return that.play(that.buildSynth(that.chordToSequence.apply(this, arguments), 60), arguments.length);
+        return that.play(that.buildSynth(that.chordToSequence(ca, that.closedVoicing), 60), ca.length);
     }
 
     return that;
@@ -370,4 +388,4 @@ var tipsound = function(srate)
 
 var ts = tipsound();
 
-document.querySelector("#play").addEventListener("click", function () { ts.playChord("C", "G7", "C"); }, false);
+document.querySelector("#play").addEventListener("click", function () { ts.playChord(document.getElementById("chord").value); }, false);
