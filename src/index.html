@@ -8,6 +8,6 @@
 <body>
     <h1>tipsound.js</h1>
     <input type="text" id="chord"  value="C G Am Em F C F G" />
-    <input type="button" id="play" value="play sound!" />
+    <input type="button" id="play" value="play sound!" onclick="ts.playChord(document.getElementById('chord').value);"/>
 </body>
 </html>

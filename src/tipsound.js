@@ -1,5 +1,5 @@
 ﻿
-"use strict"
+"use strict";
 
 var map = Array.prototype.map;
 var reduce = Array.prototype.reduce;
@@ -12,7 +12,7 @@ function mapcar(fn, lists) // ad-hock: assume all list lengths are the same. may
         for (var j = 0; j < lists.length; j++) {
             tr.push(lists[j][i]);
         }
-        r.push(fn.apply(this, tr));
+        r.push(fn.apply(null, tr));
     }
 
     return r;
@@ -26,17 +26,17 @@ function compose(f,g) {
 
 
 function inherit(p) {
-    if (p == null) throw TypeError();
+    if (p == null) throw new TypeError();
 
     if (Object.create)
         return Object.create(p);
 
     var t = typeof p;
-    if (t !== "object" && t !== "function") throw TypeError();
+    if (t !== "object" && t !== "function") throw new TypeError();
 
-    function f() { };
-    f.prototype = p;
-    return new f();
+    function F() { };
+    F.prototype = p;
+    return new F();
 }
 
 
@@ -102,7 +102,7 @@ var chordDegree = {
     G: -2,
     A: 0,
     B: 2
-}
+};
 
 var parseChord = function(chord)
 {
@@ -325,29 +325,29 @@ var tipsound = function(srate)
         src.start(this.context.currentTime);
 
         return that;
-    }
+    };
 
     that.osc_sin = function (freq) {
         return function (t) { return Math.sin(freq(t) / srate * 2 * Math.PI * t); }
-    }
+    };
 
     that.osc_saw = function (freq)
     {
         return function (t) { if (freq(t) == null) { return 0; }  else { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); } }
-    }
+    };
 
     that.sequence_freq = function (seq, bpm)
     {
         var nt = srate * 60 / bpm;
 
         return function (t) { var p = t / nt; return seq[(p % seq.length).integer()]; }
-    }
+    };
 
     that.chordToNote = function(chord)
     {
         var root = chordDegree[chord.root];
         return chord.offset.map(function (x) { return x === undefined ? null : note(chordDegree[x].integer() + 33 + root); });
-    }
+    };
 
     that.closedVoicing = function (chord) {
         var root = chordDegree[chord.root];
@@ -362,30 +362,30 @@ var tipsound = function(srate)
                 return note(cd);
             }
         });
-    }
+    };
 
 
     that.chordToSequence = function(chords, voicing)
     {
         return mapcar(function() { return arguments; }, map.call(chords, compose(voicing, parseChord)));
-    }
+    };
 
     that.buildSynth = function(seq, bpm)
     {
         return mix.apply(that, seq.map(function (x) { return that.osc_saw(that.sequence_freq(x, bpm)); }))
-    }
+    };
 
     that.playChord = function(c)
     {
         var ca = c.split(/\s/);
         // in 60bmp
         return that.play(that.buildSynth(that.chordToSequence(ca, that.closedVoicing), 60), ca.length);
-    }
+    };
 
     return that;
-}
+};
 
 
 var ts = tipsound();
 
-document.querySelector("#play").addEventListener("click", function () { ts.playChord(document.getElementById("chord").value); }, false);
+//document.querySelector("#play").addEventListener("click", function () { ts.playChord(document.getElementById("chord").value); }, false);
