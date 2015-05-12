@@ -258,9 +258,9 @@ function constant(v)
     return function (t) { return v; }
 }
 
-function gain(gf, of)
+function gain(src, gf, of)
 {
-    return function (t) { return i * gf(t) + of(t); }
+    return function (t) { return src(t) * gf(t) + of(t); }
 }
 
 
@@ -326,21 +326,40 @@ var tipsound = function(srate)
 
         return that;
     };
+    
+    that.playasync = function(seq, len) {
+        var p = that.context.createScriptProcessor(1024, 0, 1);
+        var dt = 0;
+        p.onaudioprocess = function(event) {
+            var channel = event.outputBuffer.getChannelData(0);
+            for(var i = 0; i < channel.length; i++) {
+                channel[i] = seq.call(null, dt + i);
+            }
+            dt += channel.length;
+            if(dt > srate * len) {
+                p.disconnect();
+                p = null;
+            }
+        };
+        p.connect(this.context.destination);
+        
+        return that;
+    };
 
     that.osc_sin = function (freq) {
-        return function (t) { return Math.sin(freq(t) / srate * 2 * Math.PI * t); }
+        return function (t) { return Math.sin(freq(t) / srate * 2 * Math.PI * t); };
     };
 
     that.osc_saw = function (freq)
     {
-        return function (t) { if (freq(t) == null) { return 0; }  else { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); } }
+        return function (t) { if (freq(t) === null) { return 0; }  else { var p = t % (srate / freq(t)); return 1 - 2 * p / freq(t); } };
     };
 
     that.sequence_freq = function (seq, bpm)
     {
         var nt = srate * 60 / bpm;
 
-        return function (t) { var p = t / nt; return seq[(p % seq.length).integer()]; }
+        return function (t) { var p = t / nt; return seq[(p % seq.length).integer()]; };
     };
 
     that.chordToNote = function(chord)
@@ -372,14 +391,14 @@ var tipsound = function(srate)
 
     that.buildSynth = function(seq, bpm)
     {
-        return mix.apply(that, seq.map(function (x) { return that.osc_saw(that.sequence_freq(x, bpm)); }))
+        return mix.apply(that, seq.map(function (x) { return that.osc_saw(that.sequence_freq(x, bpm)); }));
     };
 
     that.playChord = function(c)
     {
         var ca = c.split(/\s/);
         // in 60bmp
-        return that.play(that.buildSynth(that.chordToSequence(ca, that.closedVoicing), 60), ca.length);
+        return that.playasync(that.buildSynth(that.chordToSequence(ca, that.closedVoicing), 60), ca.length);
     };
 
     return that;
