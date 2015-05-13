@@ -7,10 +7,10 @@
 </head>
 <body>
     <h1>tipsound.js</h1>
-    <input type="text" id="chord"  value="C G Am Em F C F G" />
+    <input type="text" id="chord" data-bind="value: chord" />
     <span data-bind="text: volume"></span>
     <input type="range" id="volume" min="0.0" max="1.0" step="0.01" data-bind="value: volume" />
-    <input type="button" id="play" value="play" data-bind="click: play"/>
+    <input type="button" id="play" value="play" data-bind="click: playChord"/>
     <input type="button" id="stop" value="stop" data-bind="click: stop"/>
 </body>
 </html>
