@@ -2,12 +2,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <script type="text/javascript" src="tipsound.js" defer="defer"></script>
+    <script type='text/javascript' data-main="init.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.17/require.min.js"></script>
     <title>tipsound.js</title>
 </head>
 <body>
     <h1>tipsound.js</h1>
     <input type="text" id="chord"  value="C G Am Em F C F G" />
-    <input type="button" id="play" value="play sound!" onclick="ts.playChord(document.getElementById('chord').value);"/>
+    <span data-bind="text: volume"></span>
+    <input type="range" id="volume" min="0.0" max="1.0" step="0.01" data-bind="value: volume" />
+    <input type="button" id="play" value="play" data-bind="click: play"/>
+    <input type="button" id="stop" value="stop" data-bind="click: stop"/>
 </body>
 </html>

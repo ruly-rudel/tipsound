@@ -404,6 +404,9 @@ var tipsound = function(srate)
     return that;
 };
 
+var viewModel = {
+  volume: 1.0 
+};
 
 var ts = tipsound();
 
