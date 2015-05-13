@@ -26,7 +26,7 @@ function compose(f,g) {
 
 
 function inherit(p) {
-    if (p == null) throw new TypeError();
+    if (p === null) throw new TypeError();
 
     if (Object.create)
         return Object.create(p);
@@ -34,7 +34,7 @@ function inherit(p) {
     var t = typeof p;
     if (t !== "object" && t !== "function") throw new TypeError();
 
-    function F() { };
+    function F() { }
     F.prototype = p;
     return new F();
 }
@@ -250,17 +250,17 @@ var parseChord = function(chord)
     }
 
     return { "root": root, offset: ["perfect1", third, fifth, seventh] };
-}
+};
 
 
 function constant(v)
 {
-    return function (t) { return v; }
+    return function (t) { return v; };
 }
 
 function gain(src, gf, of)
 {
-    return function (t) { return src(t) * gf(t) + of(t); }
+    return function (t) { return src(t) * gf(t) + of(t); };
 }
 
 
