@@ -8,8 +8,16 @@
 <body>
     <h1>tipsound.js</h1>
     <input type="text" id="chord" data-bind="value: chord" />
+    <br />
     <span data-bind="text: volume"></span>
     <input type="range" id="volume" min="0.0" max="1.0" step="0.01" data-bind="value: volume" />
+    <br />
+    <span data-bind="text: frequency"></span>
+    <input type="range" id="frequency" min="10" max="5500" step="1" data-bind="value: frequency" />
+    <br />
+    <span data-bind="text: Q"></span>
+    <input type="range" id="Q" min="0.0001" max="30" step="0.0001" data-bind="value: Q" />
+    <br />
     <input type="button" id="play" value="play" data-bind="click: playChord"/>
     <input type="button" id="stop" value="stop" data-bind="click: stop"/>
 </body>

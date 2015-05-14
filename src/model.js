@@ -1,8 +1,11 @@
-define(function() {	// model
+define(function () {	// model
+    "use strict";
     var ctx = new AudioContext();
     var osc = null;
     var gain = null;
-    
+    var env = null;
+    var bqf = null;
+
     var chordDegree = {
         perfect1: 0,
         minor2: 1,
@@ -52,7 +55,7 @@ define(function() {	// model
             return f.call(this, g.apply(this, arguments));
         };
     }
-    
+
     Function.prototype.method = function (name, func) {
         if (!this.prototype[name]) {
             this.prototype[name] = func;
@@ -211,11 +214,11 @@ define(function() {	// model
 
         return { "root": root, offset: ["perfect1", third, fifth, seventh] };
     };
-    
+
     var noteToFreq = function (n) {
-        return Math.pow(2, (n - 33) / 12) * 440;
+        return Math.pow(2,(n - 33) / 12) * 440;
     };
-    
+
     var closedVoicing = function (chord) {
         var root = chordDegree[chord.root];
         return chord.offset.map(function (x) {
@@ -237,45 +240,74 @@ define(function() {	// model
 
     //
     // model constructor
-	return function() {
-        this.playChord = function(c, v)
-        {
+    return function () {
+        this.playChord = function (c, v, f, q) {
             var ca = c.split(/\s/);
             var seq = chordToSequence(ca, closedVoicing);
 
             gain = ctx.createGain();
             this.setGain(v);
             gain.connect(ctx.destination);
+            
+            env = ctx.createGain();
+            var attack = 0.001;
+            var decay = 0.4;
+            var sustain = 0.4;
+            var release = 0.2;
+            var noteoff = 0.6;
+            for (var i = 0; i < seq[0].length; i++) {
+                env.gain.setValueAtTime(0, ctx.currentTime + i);    // zero
+                env.gain.linearRampToValueAtTime(1, ctx.currentTime + i + attack); // attack
+                env.gain.setTargetAtTime(sustain, ctx.currentTime + i + attack, decay); // decay, sustain
+                env.gain.setTargetAtTime(0, ctx.currentTime + i + noteoff, release);    // release
+            }
+            env.connect(gain);
+            
+            bqf = ctx.createBiquadFilter();
+            this.setBQFFreq(f);
+            this.setBQFQ(q);
+            bqf.connect(env);
 
             osc = new Array(4);
-            for(var j = 0; j < osc.length; j++) {
+            for (var j = 0; j < osc.length; j++) {
                 osc[j] = ctx.createOscillator();
                 osc[j].type = "sawtooth";
                 for (var i = 0; i < seq[j].length; i++) {
                     osc[j].frequency.setValueAtTime(seq[j][i] === null ? 0 : seq[j][i], ctx.currentTime + i);
                 }
-                osc[j].connect(gain);
+                osc[j].connect(bqf);
             }
-            
-            for(var j = 0; j < osc.length; j++) {          
+
+            for (var j = 0; j < osc.length; j++) {
                 osc[j].start(ctx.currentTime);
                 osc[j].stop(ctx.currentTime + seq[j].length);
             }
         };
-        
-        this.stop = function()
-        {
-            for(var i = 0; i < osc.length; i++) {
+
+        this.stop = function () {
+            for (var i = 0; i < osc.length; i++) {
                 osc[i].disconnect();
             }
+            bqf.disconnect();
             gain.disconnect();
             osc = null;
+            bqf = null;
             gain = null;
         };
-        this.setGain = function(g)
-        {
-            if(gain)
-                gain.gain.value = g * 0.25; 
+        
+        this.setGain = function (g) {
+            if (gain)
+                gain.gain.value = g * 0.25;
         };
-	};
+        
+        this.setBQFQ = function (q) {
+            if(bqf)
+                bqf.Q.value = q;
+        };
+        
+        this.setBQFFreq = function (f) {
+            if(bqf)
+                bqf.frequency.value = f;
+        };
+    };
 });
