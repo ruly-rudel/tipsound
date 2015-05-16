@@ -241,26 +241,12 @@ define(function () {	// model
     //
     // model constructor
     return function () {
-        this.playChord = function (c, v, f, q) {
-            var ca = c.split(/\s/);
-            var seq = chordToSequence(ca, closedVoicing);
-
+        this.build = function (v, f, q) {
             gain = ctx.createGain();
             this.setGain(v);
             gain.connect(ctx.destination);
             
             env = ctx.createGain();
-            var attack = 0.001;
-            var decay = 0.4;
-            var sustain = 0.4;
-            var release = 0.2;
-            var noteoff = 0.6;
-            for (var i = 0; i < seq[0].length; i++) {
-                env.gain.setValueAtTime(0, ctx.currentTime + i);    // zero
-                env.gain.linearRampToValueAtTime(1, ctx.currentTime + i + attack); // attack
-                env.gain.setTargetAtTime(sustain, ctx.currentTime + i + attack, decay); // decay, sustain
-                env.gain.setTargetAtTime(0, ctx.currentTime + i + noteoff, release);    // release
-            }
             env.connect(gain);
             
             bqf = ctx.createBiquadFilter();
@@ -272,19 +258,48 @@ define(function () {	// model
             for (var j = 0; j < osc.length; j++) {
                 osc[j] = ctx.createOscillator();
                 osc[j].type = "sawtooth";
-                for (var i = 0; i < seq[j].length; i++) {
-                    osc[j].frequency.setValueAtTime(seq[j][i] === null ? 0 : seq[j][i], ctx.currentTime + i);
-                }
                 osc[j].connect(bqf);
             }
+        };
 
-            for (var j = 0; j < osc.length; j++) {
+        this.playChord = function (c) {
+            var ca = c.split(/\s/);
+            var seq = chordToSequence(ca, closedVoicing);
+
+            var attack = 0.001;
+            var decay = 0.4;
+            var sustain = 0.4;
+            var release = 0.2;
+            var noteoff = 0.6;
+
+	    var i;
+	    var j;
+            for (i = 0; i < seq[0].length; i++) {
+                env.gain.setValueAtTime(0, ctx.currentTime + i);    // zero
+                env.gain.linearRampToValueAtTime(1, ctx.currentTime + i + attack); // attack
+                env.gain.setTargetAtTime(sustain, ctx.currentTime + i + attack, decay); // decay, sustain
+                env.gain.setTargetAtTime(0, ctx.currentTime + i + noteoff, release);    // release
+            }
+            
+            for (j = 0; j < osc.length; j++) {
+                for (i = 0; i < seq[j].length; i++) {
+                    osc[j].frequency.setValueAtTime(seq[j][i] === null ? 0 : seq[j][i], ctx.currentTime + i);
+                }
+            }
+
+            for (j = 0; j < osc.length; j++) {
                 osc[j].start(ctx.currentTime);
                 osc[j].stop(ctx.currentTime + seq[j].length);
             }
         };
 
         this.stop = function () {
+            for (j = 0; j < osc.length; j++) {
+                osc[j].stop(ctx.currentTime);
+            }
+	};
+
+        this.clear = function () {
             for (var i = 0; i < osc.length; i++) {
                 osc[i].disconnect();
             }
