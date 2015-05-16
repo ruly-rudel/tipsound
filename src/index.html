@@ -7,6 +7,9 @@
 </head>
 <body>
     <h1>tipsound.js</h1>
+    <ul data-bind="foreach: Object.keys(test())">
+        <li><span data-bind="text: $data"></span>: <span data-bind="text: $parent.test()[$data]"></span></li>
+    </ul>
     <input type="text" id="chord" data-bind="value: chord" />
     <br />
     <span data-bind="text: volume"></span>
