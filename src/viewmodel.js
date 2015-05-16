@@ -12,17 +12,10 @@ define(['knockout-3.3.0', 'model'], function (ko, Model) {
         this.Q = ko.observable(1);
         this.Q.subscribe(model.setBQFQ);
         
-<<<<<<< HEAD
         this.test = ko.observable({hoge: "fuga", hige: "hare"});
         //this.test = ko.observable([{hoge: "fuga", hige: "hare"}, {hoge: "fuga2", hige: "hare2"}]);
-
         
-        
-        this.play = function () { model.play(this.volume()); };
-        this.playChord = function () { model.playChord(this.chord(), this.volume(), this.frequency(), this.Q()); };
-=======
         this.playChord = function () { model.playChord(this.chord()); };
->>>>>>> origin/filter-graph-implementation
         this.stop = model.stop;
 
         model.build(this.volume(), this.frequency(), this.Q());
