@@ -245,21 +245,14 @@ define(function () {	// model
             gain = ctx.createGain();
             this.setGain(v);
             gain.connect(ctx.destination);
-            
+
             env = ctx.createGain();
             env.connect(gain);
-            
+
             bqf = ctx.createBiquadFilter();
             this.setBQFFreq(f);
             this.setBQFQ(q);
             bqf.connect(env);
-
-            osc = new Array(4);
-            for (var j = 0; j < osc.length; j++) {
-                osc[j] = ctx.createOscillator();
-                osc[j].type = "sawtooth";
-                osc[j].connect(bqf);
-            }
         };
 
         this.playChord = function (c) {
@@ -272,16 +265,21 @@ define(function () {	// model
             var release = 0.2;
             var noteoff = 0.6;
 
-	    var i;
-	    var j;
+            var i;
+            var j;
             for (i = 0; i < seq[0].length; i++) {
                 env.gain.setValueAtTime(0, ctx.currentTime + i);    // zero
                 env.gain.linearRampToValueAtTime(1, ctx.currentTime + i + attack); // attack
                 env.gain.setTargetAtTime(sustain, ctx.currentTime + i + attack, decay); // decay, sustain
                 env.gain.setTargetAtTime(0, ctx.currentTime + i + noteoff, release);    // release
             }
-            
+
+            osc = new Array(4);
             for (j = 0; j < osc.length; j++) {
+                osc[j] = ctx.createOscillator();
+                osc[j].type = "sawtooth";
+                osc[j].connect(bqf);
+                
                 for (i = 0; i < seq[j].length; i++) {
                     osc[j].frequency.setValueAtTime(seq[j][i] === null ? 0 : seq[j][i], ctx.currentTime + i);
                 }
@@ -294,10 +292,13 @@ define(function () {	// model
         };
 
         this.stop = function () {
-            for (j = 0; j < osc.length; j++) {
+            for (var j = 0; j < osc.length; j++) {
                 osc[j].stop(ctx.currentTime);
+                osc[j].disconnect();
+                osc[j] = null;
             }
-	};
+            env.gain.cancelScheduledValues(ctx.currentTime);
+        };
 
         this.clear = function () {
             for (var i = 0; i < osc.length; i++) {
@@ -309,19 +310,19 @@ define(function () {	// model
             bqf = null;
             gain = null;
         };
-        
+
         this.setGain = function (g) {
             if (gain)
                 gain.gain.value = g * 0.25;
         };
-        
+
         this.setBQFQ = function (q) {
-            if(bqf)
+            if (bqf)
                 bqf.Q.value = q;
         };
-        
+
         this.setBQFFreq = function (f) {
-            if(bqf)
+            if (bqf)
                 bqf.frequency.value = f;
         };
     };
