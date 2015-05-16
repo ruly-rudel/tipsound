@@ -1,9 +1,9 @@
 // Main viewmodel class
 define(['knockout-3.3.0', 'model'], function (ko, Model) {
     "use strict";
+    var model = new Model();
 
     return function () { // ViewModel constructor
-        var model = new Model();
         this.chord = ko.observable('C G Am Em F C F G');
         this.volume = ko.observable(0.5);
         this.volume.subscribe(model.setGain);   // maybe not good
@@ -12,8 +12,9 @@ define(['knockout-3.3.0', 'model'], function (ko, Model) {
         this.Q = ko.observable(1);
         this.Q.subscribe(model.setBQFQ);
         
-        this.play = function () { model.play(this.volume()); };
-        this.playChord = function () { model.playChord(this.chord(), this.volume(), this.frequency(), this.Q()); };
+        this.playChord = function () { model.playChord(this.chord()); };
         this.stop = model.stop;
+
+        model.build(this.volume(), this.frequency(), this.Q());
     };
 });
