@@ -314,15 +314,15 @@ define(function () {	// model
     // model constructor
     return function () {
         this.build = function (v, f, q) {
-            asynth = ModAsynth(4);
+            asynth = ModAsynth(32);
             asynth.gain.gain.value = v;
             asynth.connect(ctx.destination);
 
-            for (var i = 0; i < 4; i++) {
+            for (var i = 0; i < asynth.voice.length; i++) {
                 asynth.voice[i].bqfFreqScale = f;
                 asynth.voice[i].bqf.Q.value = q;
 
-                asynth.voice[i].env.attack = 0.0001;
+                asynth.voice[i].env.attack = 0.0;
                 asynth.voice[i].env.decay = 0.4;
                 asynth.voice[i].env.sustain = 0.0;
                 asynth.voice[i].env.release = 0.0;
@@ -335,28 +335,23 @@ define(function () {	// model
         }
         this.stop = function (voice) {
             asynth.voice[voice].stop(ctx.currentTime);
-            /*
-            for (var j = 0; j < osc.length; j++) {
-                osc[j].stop(ctx.currentTime);
-                osc[j].disconnect();
-                osc[j] = null;
-            }
-            env.gain.cancelScheduledValues(ctx.currentTime);
-            */
         };
 
 
         this.playChord = function (c) {
             var ca = c.split(/\s/);
             var seq = chordToSequence(ca, closedVoicing);
-            var noteOff = 0.95;
+            var noteOff = 2.0;
 
-            for (var j = 0; j < asynth.voice.length; j++) {
+            var current = 0;
+            for (var j = 0; j < seq.length; j++) {
                 for (var i = 0; i < seq[j].length; i++) {
                     if (seq[j][i] !== null) {
-                        asynth.voice[j].osc.frequency = seq[j][i];
-                        asynth.voice[j].start(ctx.currentTime + i);
-                        asynth.voice[j].stop(ctx.currentTime + i + noteOff);
+                        asynth.voice[current].osc.frequency = seq[j][i];
+                        asynth.voice[current].start(ctx.currentTime + i);
+                        asynth.voice[current].stop(ctx.currentTime + i + noteOff);
+                        current++;
+                        if(current >= asynth.voice.length) current = 0;
                     }
                 }
             }
