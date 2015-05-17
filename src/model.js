@@ -324,8 +324,8 @@ define(function () {	// model
 
                 asynth.voice[i].env.attack = 0.0001;
                 asynth.voice[i].env.decay = 0.4;
-                asynth.voice[i].env.sustain = 0.4;
-                asynth.voice[i].env.release = 0.2;
+                asynth.voice[i].env.sustain = 0.0;
+                asynth.voice[i].env.release = 0.0;
             }
         };
 
@@ -349,7 +349,7 @@ define(function () {	// model
         this.playChord = function (c) {
             var ca = c.split(/\s/);
             var seq = chordToSequence(ca, closedVoicing);
-            var noteOff = 0.6;
+            var noteOff = 0.95;
 
             for (var j = 0; j < asynth.voice.length; j++) {
                 for (var i = 0; i < seq[j].length; i++) {
@@ -378,7 +378,7 @@ define(function () {	// model
 
         this.setGain = function (g) {
             if (asynth)
-                asynth.gain.gain.value = g * 0.25;
+                asynth.gain.gain.value = g;
         };
 
         this.setBQFQ = function (q) {
