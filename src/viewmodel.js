@@ -7,8 +7,8 @@ define(['knockout-3.3.0', 'model'], function (ko, Model) {
         this.chord = ko.observable('C G Am Em F C F G');
         this.volume = ko.observable(0.5);
         this.volume.subscribe(model.setGain);   // maybe not good
-        this.frequency = ko.observable(880);
-        this.frequency.subscribe(model.setBQFFreq);
+        this.freqscale = ko.observable(1.4);
+        this.freqscale.subscribe(model.setBQFFreqScale);
         this.Q = ko.observable(1);
         this.Q.subscribe(model.setBQFQ);
         
@@ -16,8 +16,8 @@ define(['knockout-3.3.0', 'model'], function (ko, Model) {
         //this.test = ko.observable([{hoge: "fuga", hige: "hare"}, {hoge: "fuga2", hige: "hare2"}]);
         
         this.playChord = function () { model.playChord(this.chord()); };
-        this.stop = model.stop;
+        this.stop = function() { model.stop(0); };
 
-        model.build(this.volume(), this.frequency(), this.Q());
+        model.build(this.volume(), this.freqscale(), this.Q());
     };
 });

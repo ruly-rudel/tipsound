@@ -1,10 +1,7 @@
 define(function () {	// model
     "use strict";
     var ctx = new AudioContext();
-    var osc = null;
-    var gain = null;
-    var env = null;
-    var bqf = null;
+    var asynth = null;
 
     var chordDegree = {
         perfect1: 0,
@@ -238,69 +235,136 @@ define(function () {	// model
         return mapcar(function () { return arguments; }, map.call(chords, compose(voicing, parseChord)));
     };
 
+    function ModEnv() {
+        var that = {};
+        that.input = ctx.createGain();
+        that.attack = 0;
+        that.decay = 0;
+        that.sustain = 1;
+        that.release = 0;
+
+        that.connect = function (dist) { that.input.connect(dist); };
+        that.start = function (t) {
+            that.input.gain.setValueAtTime(0, t);    // zero
+            that.input.gain.linearRampToValueAtTime(1, t + that.attack); // attack
+            that.input.gain.setTargetAtTime(that.sustain, t + that.attack, that.decay); // decay, sustain
+            
+            return that;
+        };
+        that.stop = function (t) {
+            that.input.gain.setTargetAtTime(0, t, that.release);    // release 
+            
+            return that;
+        };
+
+        return that;
+    }
+
+    function ModAsynth1() {
+        var that = {};
+        that.bqf = ctx.createBiquadFilter();
+        that.osc = {
+            type: "sawtooth",
+            frequency: 440
+        };
+        that.bqfFreqScale = 2;
+        that.env = ModEnv();
+        
+        var osc = null;
+
+        that.bqf.connect(that.env.input);
+
+        that.connect = function (dist) { that.env.connect(dist); };
+        that.start = function (t) {
+            osc = ctx.createOscillator();
+            osc.type = that.osc.type;
+            osc.frequency.value = that.osc.frequency;
+            osc.connect(that.bqf);
+            that.bqf.frequency.setValueAtTime(that.osc.frequency * that.bqfFreqScale, t);
+            osc.start(t);
+            that.env.start(t);
+            return that;
+        };
+        that.stop = function (t) {
+            osc.stop(t + that.env.release * 1.5);
+            that.env.stop(t);
+            osc = null;
+            return that;
+        };
+
+        return that;
+    };
+
+    function ModAsynth(numvoice) {
+        var that = {};
+        that.gain = ctx.createGain();
+        that.voice = new Array(numvoice);
+
+        for (var i = 0; i < numvoice; i++) {
+            that.voice[i] = ModAsynth1();
+            that.voice[i].connect(that.gain);
+        }
+
+        that.connect = function (dist) { that.gain.connect(dist); };
+        
+        return that;
+    }
+
     //
     // model constructor
     return function () {
         this.build = function (v, f, q) {
-            gain = ctx.createGain();
-            this.setGain(v);
-            gain.connect(ctx.destination);
+            asynth = ModAsynth(4);
+            asynth.gain.gain.value = v;
+            asynth.connect(ctx.destination);
 
-            env = ctx.createGain();
-            env.connect(gain);
+            for (var i = 0; i < 4; i++) {
+                asynth.voice[i].bqfFreqScale = f;
+                asynth.voice[i].bqf.Q.value = q;
 
-            bqf = ctx.createBiquadFilter();
-            this.setBQFFreq(f);
-            this.setBQFQ(q);
-            bqf.connect(env);
-        };
-
-        this.playChord = function (c) {
-            var ca = c.split(/\s/);
-            var seq = chordToSequence(ca, closedVoicing);
-
-            var attack = 0.001;
-            var decay = 0.4;
-            var sustain = 0.4;
-            var release = 0.2;
-            var noteoff = 0.6;
-
-            var i;
-            var j;
-            for (i = 0; i < seq[0].length; i++) {
-                env.gain.setValueAtTime(0, ctx.currentTime + i);    // zero
-                env.gain.linearRampToValueAtTime(1, ctx.currentTime + i + attack); // attack
-                env.gain.setTargetAtTime(sustain, ctx.currentTime + i + attack, decay); // decay, sustain
-                env.gain.setTargetAtTime(0, ctx.currentTime + i + noteoff, release);    // release
-            }
-
-            osc = new Array(4);
-            for (j = 0; j < osc.length; j++) {
-                osc[j] = ctx.createOscillator();
-                osc[j].type = "sawtooth";
-                osc[j].connect(bqf);
-                
-                for (i = 0; i < seq[j].length; i++) {
-                    osc[j].frequency.setValueAtTime(seq[j][i] === null ? 0 : seq[j][i], ctx.currentTime + i);
-                }
-            }
-
-            for (j = 0; j < osc.length; j++) {
-                osc[j].start(ctx.currentTime);
-                osc[j].stop(ctx.currentTime + seq[j].length);
+                asynth.voice[i].env.attack = 0.0001;
+                asynth.voice[i].env.decay = 0.4;
+                asynth.voice[i].env.sustain = 0.4;
+                asynth.voice[i].env.release = 0.2;
             }
         };
 
-        this.stop = function () {
+        this.play = function (voice, note) {
+            asynth.voice[voice].osc.frequency = note;
+            asynth.voice[voice].start(ctx.currentTime);
+        }
+        this.stop = function (voice) {
+            asynth.voice[voice].stop(ctx.currentTime);
+            /*
             for (var j = 0; j < osc.length; j++) {
                 osc[j].stop(ctx.currentTime);
                 osc[j].disconnect();
                 osc[j] = null;
             }
             env.gain.cancelScheduledValues(ctx.currentTime);
+            */
         };
 
+
+        this.playChord = function (c) {
+            var ca = c.split(/\s/);
+            var seq = chordToSequence(ca, closedVoicing);
+            var noteOff = 0.6;
+
+            for (var j = 0; j < asynth.voice.length; j++) {
+                for (var i = 0; i < seq[j].length; i++) {
+                    if (seq[j][i] !== null) {
+                        asynth.voice[j].osc.frequency = seq[j][i];
+                        asynth.voice[j].start(ctx.currentTime + i);
+                        asynth.voice[j].stop(ctx.currentTime + i + noteOff);
+                    }
+                }
+            }
+        };
+
+
         this.clear = function () {
+            /*
             for (var i = 0; i < osc.length; i++) {
                 osc[i].disconnect();
             }
@@ -309,21 +373,37 @@ define(function () {	// model
             osc = null;
             bqf = null;
             gain = null;
+            */
         };
 
         this.setGain = function (g) {
-            if (gain)
-                gain.gain.value = g * 0.25;
+            if (asynth)
+                asynth.gain.gain.value = g * 0.25;
         };
 
         this.setBQFQ = function (q) {
-            if (bqf)
-                bqf.Q.value = q;
+            if (asynth) {
+                for (var i = 0; i < asynth.voice.length; i++) {
+                    asynth.voice[i].bqf.Q.value = q;
+                }
+            }
         };
 
         this.setBQFFreq = function (f) {
-            if (bqf)
-                bqf.frequency.value = f;
+            if (asynth) {
+                for (var i = 0; i < asynth.voice.length; i++) {
+                    asynth.voice[i].bqf.frequency.value = f;
+                }
+            }
         };
+        
+        this.setBQFFreqScale = function (f) {
+            if (asynth) {
+                for (var i = 0; i < asynth.voice.length; i++) {
+                    asynth.voice[i].bqfFreqScale = f;
+                }
+            }
+        };
+
     };
 });
