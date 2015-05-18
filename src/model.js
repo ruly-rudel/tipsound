@@ -238,21 +238,23 @@ define(function () {	// model
     function ModEnv() {
         var that = {};
         that.input = ctx.createGain();
-        that.attack = 0;
-        that.decay = 0;
-        that.sustain = 1;
-        that.release = 0;
+        that.parameter = {
+            attack: 0,
+            decay: 0,
+            sustain: 1,
+            release: 0    
+        };
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
             that.input.gain.setValueAtTime(0, t);    // zero
-            that.input.gain.linearRampToValueAtTime(1, t + that.attack); // attack
-            that.input.gain.setTargetAtTime(that.sustain, t + that.attack, that.decay); // decay, sustain
+            that.input.gain.linearRampToValueAtTime(1, t + that.parameter.attack); // attack
+            that.input.gain.setTargetAtTime(that.parameter.sustain, t + that.parameter.attack, that.parameter.decay); // decay, sustain
             
             return that;
         };
         that.stop = function (t) {
-            that.input.gain.setTargetAtTime(0, t, that.release);    // release 
+            that.input.gain.setTargetAtTime(0, t, that.parameter.release);    // release 
             
             return that;
         };
@@ -286,7 +288,7 @@ define(function () {	// model
             return that;
         };
         that.stop = function (t) {
-            osc.stop(t + that.env.release * 1.5);
+            osc.stop(t + that.env.parameter.release * 4);     // ad-hock scale factor *4
             that.env.stop(t);
             osc = null;
             return that;
@@ -295,17 +297,34 @@ define(function () {	// model
         return that;
     };
 
-    function ModAsynth(numvoice) {
+    function ModAsynth() {
         var that = {};
         that.gain = ctx.createGain();
-        that.voice = new Array(numvoice);
-
-        for (var i = 0; i < numvoice; i++) {
-            that.voice[i] = ModAsynth1();
-            that.voice[i].connect(that.gain);
-        }
-
+        that.env = ModEnv().parameter;
+        that.bqf = {
+            freqScale: 2,
+            Q: 0.0001
+        };
+        that.osc = {
+            type: "sawtooth"
+        };
+        
         that.connect = function (dist) { that.gain.connect(dist); };
+        
+        that.start = function(t, freq) {
+            var v = ModAsynth1();
+            v.connect(that.gain);
+            
+            v.env.parameter = that.env;
+            
+            v.bqf.Q.value = that.bqf.Q;
+            v.bqfFreqScale = that.bqf.freqScale;
+            
+            v.osc.type = that.osc.type;
+            v.osc.frequency = freq;
+            
+            return v.start(t);
+        };
         
         return that;
     }
@@ -314,62 +333,41 @@ define(function () {	// model
     // model constructor
     return function () {
         this.build = function (v, f, q) {
-            asynth = ModAsynth(32);
+            asynth = ModAsynth();
+            
             asynth.gain.gain.value = v;
+            
+            asynth.env.attack = 0.0;
+            asynth.env.decay = 0.4;
+            asynth.env.sustain = 0.0;
+            asynth.env.release = 0.0;
+            
+            asynth.bqf.freqScale = f;
+            asynth.bqf.Q = q;
+
             asynth.connect(ctx.destination);
 
-            for (var i = 0; i < asynth.voice.length; i++) {
-                asynth.voice[i].bqfFreqScale = f;
-                asynth.voice[i].bqf.Q.value = q;
-
-                asynth.voice[i].env.attack = 0.0;
-                asynth.voice[i].env.decay = 0.4;
-                asynth.voice[i].env.sustain = 0.0;
-                asynth.voice[i].env.release = 0.0;
-            }
         };
 
-        this.play = function (voice, note) {
-            asynth.voice[voice].osc.frequency = note;
-            asynth.voice[voice].start(ctx.currentTime);
-        }
-        this.stop = function (voice) {
-            asynth.voice[voice].stop(ctx.currentTime);
+        this.play = function (note) {
+            return asynth.start(ctx.currentTime, note);
         };
-
 
         this.playChord = function (c) {
             var ca = c.split(/\s/);
             var seq = chordToSequence(ca, closedVoicing);
             var noteOff = 2.0;
 
-            var current = 0;
             for (var j = 0; j < seq.length; j++) {
                 for (var i = 0; i < seq[j].length; i++) {
                     if (seq[j][i] !== null) {
-                        asynth.voice[current].osc.frequency = seq[j][i];
-                        asynth.voice[current].start(ctx.currentTime + i);
-                        asynth.voice[current].stop(ctx.currentTime + i + noteOff);
-                        current++;
-                        if(current >= asynth.voice.length) current = 0;
+                        asynth.start(ctx.currentTime + i, seq[j][i])
+                              .stop(ctx.currentTime + i + noteOff);
                     }
                 }
             }
         };
 
-
-        this.clear = function () {
-            /*
-            for (var i = 0; i < osc.length; i++) {
-                osc[i].disconnect();
-            }
-            bqf.disconnect();
-            gain.disconnect();
-            osc = null;
-            bqf = null;
-            gain = null;
-            */
-        };
 
         this.setGain = function (g) {
             if (asynth)
@@ -378,25 +376,13 @@ define(function () {	// model
 
         this.setBQFQ = function (q) {
             if (asynth) {
-                for (var i = 0; i < asynth.voice.length; i++) {
-                    asynth.voice[i].bqf.Q.value = q;
-                }
+                asynth.bqf.Q = q;
             }
         };
 
-        this.setBQFFreq = function (f) {
-            if (asynth) {
-                for (var i = 0; i < asynth.voice.length; i++) {
-                    asynth.voice[i].bqf.frequency.value = f;
-                }
-            }
-        };
-        
         this.setBQFFreqScale = function (f) {
             if (asynth) {
-                for (var i = 0; i < asynth.voice.length; i++) {
-                    asynth.voice[i].bqfFreqScale = f;
-                }
+                asynth.bqf.freqScale = f;
             }
         };
 
