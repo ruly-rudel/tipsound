@@ -291,6 +291,7 @@ define(function () {	// model
         var that = {};
         that.input = ctx.createBiquadFilter();
         that.parameter = {
+            frequency: 880,
             Q: 0.0001
         };
         
