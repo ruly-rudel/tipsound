@@ -234,6 +234,31 @@ define(function () {	// model
     var chordToSequence = function (chords, voicing) {
         return mapcar(function () { return arguments; }, map.call(chords, compose(voicing, parseChord)));
     };
+    
+    function ModOsc() {
+        var that = {};
+        that.input = ctx.createOscillator();
+        that.parameter = {
+            type: "sawtooth",
+            frequency: 440
+        };
+        
+        that.connect = function(dist) { that.input.connect(dist); };
+        that.start = function(t) {
+            that.input.type = that.parameter.type;
+            that.input.frequency.setValueAtTime(that.parameter.frequency, t);
+            that.input.start(t);
+            
+            return that;
+        };
+        that.stop = function(t) {
+            that.input.stop(t);
+            
+            return that;
+        }
+        
+        return that;
+    }
 
     function ModEnv() {
         var that = {};
@@ -261,35 +286,59 @@ define(function () {	// model
 
         return that;
     }
+    
+    function ModBqf() {
+        var that = {};
+        that.input = ctx.createBiquadFilter();
+        that.parameter = {
+            Q: 0.0001
+        };
+        
+        that.connect = function(dist) { that.input.connect(dist); };
+        that.start = function(t) {
+            that.input.frequency.setValueAtTime(that.parameter.frequency, t);
+            that.input.Q.setValueAtTime(that.parameter.Q, t);
+            return that;
+        };
+        
+        return that;
+    };
 
     function ModAsynth1() {
         var that = {};
-        that.bqf = ctx.createBiquadFilter();
-        that.osc = {
-            type: "sawtooth",
-            frequency: 440
+        that.parameter = {
+           osc: ModOsc().parameter,
+           bqf: {
+               freqScale: 2,
+               Q: 0.0001
+           },
+           env: ModEnv().parameter
         };
-        that.bqfFreqScale = 2;
-        that.env = ModEnv();
-        
+        var bqf = ModBqf();
+        var env = ModEnv();        
         var osc = null;
 
-        that.bqf.connect(that.env.input);
+        bqf.connect(env.input);
 
-        that.connect = function (dist) { that.env.connect(dist); };
+        that.connect = function (dist) { env.connect(dist); };
         that.start = function (t) {
-            osc = ctx.createOscillator();
-            osc.type = that.osc.type;
-            osc.frequency.value = that.osc.frequency;
-            osc.connect(that.bqf);
-            that.bqf.frequency.setValueAtTime(that.osc.frequency * that.bqfFreqScale, t);
+            osc = ModOsc();
+            osc.parameter = that.parameter.osc;
+            osc.connect(bqf.input);
+            
+            bqf.parameter.frequency = that.parameter.osc.frequency * that.parameter.bqf.freqScale;
+            bqf.parameter.Q = that.parameter.bqf.Q;
+            
+            env.parameter = that.parameter.env;
+            
             osc.start(t);
-            that.env.start(t);
+            bqf.start(t);
+            env.start(t);
             return that;
         };
         that.stop = function (t) {
-            osc.stop(t + that.env.parameter.release * 4);     // ad-hock scale factor *4
-            that.env.stop(t);
+            osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
+            env.stop(t);
             osc = null;
             return that;
         };
@@ -300,14 +349,7 @@ define(function () {	// model
     function ModAsynth() {
         var that = {};
         that.gain = ctx.createGain();
-        that.env = ModEnv().parameter;
-        that.bqf = {
-            freqScale: 2,
-            Q: 0.0001
-        };
-        that.osc = {
-            type: "sawtooth"
-        };
+        that.parameter = ModAsynth1().parameter;
         
         that.connect = function (dist) { that.gain.connect(dist); };
         
@@ -315,13 +357,8 @@ define(function () {	// model
             var v = ModAsynth1();
             v.connect(that.gain);
             
-            v.env.parameter = that.env;
-            
-            v.bqf.Q.value = that.bqf.Q;
-            v.bqfFreqScale = that.bqf.freqScale;
-            
-            v.osc.type = that.osc.type;
-            v.osc.frequency = freq;
+            v.parameter = that.parameter;
+            v.parameter.osc.frequency = freq;
             
             return v.start(t);
         };
@@ -337,13 +374,13 @@ define(function () {	// model
             
             asynth.gain.gain.value = v;
             
-            asynth.env.attack = 0.0;
-            asynth.env.decay = 0.4;
-            asynth.env.sustain = 0.0;
-            asynth.env.release = 0.0;
+            asynth.parameter.env.attack = 0.0;
+            asynth.parameter.env.decay = 0.4;
+            asynth.parameter.env.sustain = 0.0;
+            asynth.parameter.env.release = 0.0;
             
-            asynth.bqf.freqScale = f;
-            asynth.bqf.Q = q;
+            asynth.parameter.bqf.freqScale = f;
+            asynth.parameter.bqf.Q = q;
 
             asynth.connect(ctx.destination);
 
