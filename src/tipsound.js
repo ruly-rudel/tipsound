@@ -225,7 +225,20 @@ define(['util'], function (util) {
         
         return that;
     };
+    
+    ts.ModGain = function() {
+        var that = {};
+        that.input = ts.ctx.createGain();
+        that.parameter = {
+            gain: util.Observable(1)
+        };
+        that.parameter.gain.subscribe(function(v) { that.input.gain.value = v; });
 
+        that.connect = function (dist) { that.input.connect(dist); };
+
+        return that;
+    };
+    
     ts.ModEnv = function() {
         var that = {};
         that.input = ts.ctx.createGain();
@@ -315,18 +328,17 @@ define(['util'], function (util) {
 
     ts.ModAsynth = function() {
         var that = {};
-        var gain = ts.ctx.createGain();
+        var gain = ts.ModGain();
         that.parameter = {
-            gain: util.Observable(0.5),
+            gain: gain.parameter,
             asynth1: ts.ModAsynth1().parameter
         };
-        that.parameter.gain.subscribe(function(v) { gain.gain.value = v; });
         
         that.connect = function (dist) { gain.connect(dist); };
         
         that.start = function(t, freq) {
             var v = ts.ModAsynth1();
-            v.connect(gain);
+            v.connect(gain.input);
             
             v.parameter = that.parameter.asynth1;
             v.parameter.osc.frequency = freq;

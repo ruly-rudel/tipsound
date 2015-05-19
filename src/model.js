@@ -1,45 +1,39 @@
 define(['tipsound'], function (ts) {	// model
     "use strict";
+    var that = {};
+    
     var asynth = null;
 
-    //
-    // model constructor
-    return function () {
-        this.build = function (v, f, q) {
-            asynth = ts.ModAsynth();
-            
-            asynth.parameter.gain(v);
-            
-            asynth.parameter.asynth1.env.attack = 0.0;
-            asynth.parameter.asynth1.env.decay = 0.4;
-            asynth.parameter.asynth1.env.sustain = 0.0;
-            asynth.parameter.asynth1.env.release = 0.0;
-            
-            asynth.parameter.asynth1.bqf.freqScale(f);
-            asynth.parameter.asynth1.bqf.Q(q);
+    that.build = function () {
+        asynth = ts.ModAsynth();
 
-            asynth.connect(ts.ctx.destination);
-            this.parameter = asynth.parameter;
-        };
+        asynth.parameter.asynth1.env.attack = 0.0;
+        asynth.parameter.asynth1.env.decay = 0.4;
+        asynth.parameter.asynth1.env.sustain = 0.0;
+        asynth.parameter.asynth1.env.release = 0.0;
 
-        this.play = function (note) {
-            return asynth.start(ts.ctx.currentTime, note);
-        };
+        asynth.connect(ts.ctx.destination);
+        that.parameter = asynth.parameter;
+    };
 
-        this.playChord = function (c) {
-            var ca = c.split(/\s/);
-            var seq = ts.chordToSequence(ca, ts.closedVoicing);
-            var noteOff = 2.0;
+    that.play = function (note) {
+        return asynth.start(ts.ctx.currentTime, note);
+    };
 
-            for (var j = 0; j < seq.length; j++) {
-                for (var i = 0; i < seq[j].length; i++) {
-                    if (seq[j][i] !== null) {
-                        asynth.start(ts.ctx.currentTime + i, seq[j][i])
-                              .stop(ts.ctx.currentTime + i + noteOff);
-                    }
+    that.playChord = function (c) {
+        var ca = c.split(/\s/);
+        var seq = ts.chordToSequence(ca, ts.closedVoicing);
+        var noteOff = 2.0;
+
+        for (var j = 0; j < seq.length; j++) {
+            for (var i = 0; i < seq[j].length; i++) {
+                if (seq[j][i] !== null) {
+                    asynth.start(ts.ctx.currentTime + i, seq[j][i])
+                        .stop(ts.ctx.currentTime + i + noteOff);
                 }
             }
-        };
-
+        }
     };
+    
+    return that;
 });
