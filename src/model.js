@@ -235,6 +235,28 @@ define(function () {	// model
         return mapcar(function () { return arguments; }, map.call(chords, compose(voicing, parseChord)));
     };
     
+    function Observable(v) {
+        var subscriber = [];
+        var value = v;
+        
+        var that = function() {
+            if(arguments.length == 1) {  // update
+                value = arguments[0];
+                subscriber.map(function(s) { s(value); });
+            }
+            
+            return value;
+        };
+        
+        that.subscribe = function(callback) {
+            subscriber.push(callback);
+            
+            return that;
+        };
+
+        return that;        
+    };
+    
     function ModOsc() {
         var that = {};
         that.input = ctx.createOscillator();
@@ -310,8 +332,8 @@ define(function () {	// model
         that.parameter = {
            osc: ModOsc().parameter,
            bqf: {
-               freqScale: 2,
-               Q: 0.0001
+               freqScale: Observable(2),
+               Q: Observable(0.0001)
            },
            env: ModEnv().parameter
         };
@@ -327,8 +349,8 @@ define(function () {	// model
             osc.parameter = that.parameter.osc;
             osc.connect(bqf.input);
             
-            bqf.parameter.frequency = that.parameter.osc.frequency * that.parameter.bqf.freqScale;
-            bqf.parameter.Q = that.parameter.bqf.Q;
+            bqf.parameter.frequency = that.parameter.osc.frequency * that.parameter.bqf.freqScale();
+            bqf.parameter.Q = that.parameter.bqf.Q();
             
             env.parameter = that.parameter.env;
             
@@ -349,16 +371,20 @@ define(function () {	// model
 
     function ModAsynth() {
         var that = {};
-        that.gain = ctx.createGain();
-        that.parameter = ModAsynth1().parameter;
+        var gain = ctx.createGain();
+        that.parameter = {
+            gain: Observable(0.5),
+            asynth1: ModAsynth1().parameter
+        };
+        that.parameter.gain.subscribe(function(v) { gain.gain.value = v; });
         
-        that.connect = function (dist) { that.gain.connect(dist); };
+        that.connect = function (dist) { gain.connect(dist); };
         
         that.start = function(t, freq) {
             var v = ModAsynth1();
-            v.connect(that.gain);
+            v.connect(gain);
             
-            v.parameter = that.parameter;
+            v.parameter = that.parameter.asynth1;
             v.parameter.osc.frequency = freq;
             
             return v.start(t);
@@ -373,18 +399,18 @@ define(function () {	// model
         this.build = function (v, f, q) {
             asynth = ModAsynth();
             
-            asynth.gain.gain.value = v;
+            asynth.parameter.gain(v);
             
-            asynth.parameter.env.attack = 0.0;
-            asynth.parameter.env.decay = 0.4;
-            asynth.parameter.env.sustain = 0.0;
-            asynth.parameter.env.release = 0.0;
+            asynth.parameter.asynth1.env.attack = 0.0;
+            asynth.parameter.asynth1.env.decay = 0.4;
+            asynth.parameter.asynth1.env.sustain = 0.0;
+            asynth.parameter.asynth1.env.release = 0.0;
             
-            asynth.parameter.bqf.freqScale = f;
-            asynth.parameter.bqf.Q = q;
+            asynth.parameter.asynth1.bqf.freqScale(f);
+            asynth.parameter.asynth1.bqf.Q(q);
 
             asynth.connect(ctx.destination);
-
+            this.parameter = asynth.parameter;
         };
 
         this.play = function (note) {
@@ -403,24 +429,6 @@ define(function () {	// model
                               .stop(ctx.currentTime + i + noteOff);
                     }
                 }
-            }
-        };
-
-
-        this.setGain = function (g) {
-            if (asynth)
-                asynth.gain.gain.value = g;
-        };
-
-        this.setBQFQ = function (q) {
-            if (asynth) {
-                asynth.bqf.Q = q;
-            }
-        };
-
-        this.setBQFFreqScale = function (f) {
-            if (asynth) {
-                asynth.bqf.freqScale = f;
             }
         };
 
