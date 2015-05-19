@@ -5,19 +5,20 @@ define(['tipsound'], function (ts) {	// model
     var asynth = null;
 
     that.build = function () {
-        asynth = ts.ModAsynth();
+        asynth = ts.ModPoly(ts.ModAsynth);
 
-        asynth.parameter.asynth1.env.attack = 0.0;
-        asynth.parameter.asynth1.env.decay = 0.4;
-        asynth.parameter.asynth1.env.sustain = 0.0;
-        asynth.parameter.asynth1.env.release = 0.0;
+        asynth.parameter.mono.env.attack = 0.0;
+        asynth.parameter.mono.env.decay = 0.4;
+        asynth.parameter.mono.env.sustain = 0.0;
+        asynth.parameter.mono.env.release = 0.0;
 
         asynth.connect(ts.ctx.destination);
         that.parameter = asynth.parameter;
     };
 
     that.play = function (note) {
-        return asynth.start(ts.ctx.currentTime, note);
+        asynth.parameter.mono.osc.frequency = note;
+        return asynth.start(ts.ctx.currentTime);
     };
 
     that.playChord = function (c) {
@@ -28,7 +29,8 @@ define(['tipsound'], function (ts) {	// model
         for (var j = 0; j < seq.length; j++) {
             for (var i = 0; i < seq[j].length; i++) {
                 if (seq[j][i] !== null) {
-                    asynth.start(ts.ctx.currentTime + i, seq[j][i])
+                    asynth.parameter.mono.osc.frequency = seq[j][i];
+                    asynth.start(ts.ctx.currentTime + i)
                         .stop(ts.ctx.currentTime + i + noteOff);
                 }
             }

@@ -1,8 +1,8 @@
 define(['util'], function (util) {
     "use strict";
-    
+
     var ts = {};
-	ts.ctx = new AudioContext();
+    ts.ctx = new AudioContext();
 
     // utility functions
     ts.chordDegree = {
@@ -29,7 +29,7 @@ define(['util'], function (util) {
         B: 2
     };
 
-    
+
     ts.parseChord = function (chord) {
         var st = 0; // state
         var pos = 0;
@@ -201,52 +201,52 @@ define(['util'], function (util) {
 
     //
     // AudioNode Modules
-    ts.ModOsc = function() {
+    ts.ModOsc = function () {
         var that = {};
         that.input = ts.ctx.createOscillator();
         that.parameter = {
             type: "sawtooth",
             frequency: 440
         };
-        
-        that.connect = function(dist) { that.input.connect(dist); };
-        that.start = function(t) {
+
+        that.connect = function (dist) { that.input.connect(dist); };
+        that.start = function (t) {
             that.input.type = that.parameter.type;
             that.input.frequency.setValueAtTime(that.parameter.frequency, t);
             that.input.start(t);
-            
+
             return that;
         };
-        that.stop = function(t) {
+        that.stop = function (t) {
             that.input.stop(t);
-            
+
             return that;
         };
-        
+
         return that;
     };
-    
-    ts.ModGain = function() {
+
+    ts.ModGain = function () {
         var that = {};
         that.input = ts.ctx.createGain();
         that.parameter = {
             gain: util.Observable(1)
         };
-        that.parameter.gain.subscribe(function(v) { that.input.gain.value = v; });
+        that.parameter.gain.subscribe(function (v) { that.input.gain.value = v; });
 
         that.connect = function (dist) { that.input.connect(dist); };
 
         return that;
     };
-    
-    ts.ModEnv = function() {
+
+    ts.ModEnv = function () {
         var that = {};
         that.input = ts.ctx.createGain();
         that.parameter = {
             attack: 0,
             decay: 0,
             sustain: 1,
-            release: 0    
+            release: 0
         };
 
         that.connect = function (dist) { that.input.connect(dist); };
@@ -265,37 +265,47 @@ define(['util'], function (util) {
 
         return that;
     };
-    
-    ts.ModBqf = function() {
+
+    ts.ModBqf = function () {
         var that = {};
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
-            frequency: 880,
-            Q: 0.0001
+            frequency: util.Observable(880),
+            Q: util.Observable(0.0001)
         };
-        
-        that.connect = function(dist) { that.input.connect(dist); };
-        that.start = function(t) {
-            that.input.frequency.setValueAtTime(that.parameter.frequency, t);
-            that.input.Q.setValueAtTime(that.parameter.Q, t);
+
+        var subscriber = [];
+
+        that.connect = function (dist) { that.input.connect(dist); };
+        that.start = function (t) {
+            subscriber.push(that.parameter.frequency.subscribe(function (v) { that.input.frequency.setValueAtTime(v, t); }));
+            subscriber.push(that.parameter.Q.subscribe(function (v) { that.input.Q.setValueAtTime(v, t); }));
+
+            that.input.frequency.setValueAtTime(that.parameter.frequency(), t);
+            that.input.Q.setValueAtTime(that.parameter.Q(), t);
             return that;
         };
-        
+
+        that.dispose = function () {
+            subscriber.map(function (x) { x.dispose(); });
+            subscriber = [];
+        };
+
         return that;
     };
 
-    ts.ModAsynth1 = function() {
+    ts.ModAsynth = function () {
         var that = {};
         that.parameter = {
-           osc: ts.ModOsc().parameter,
-           bqf: {
-               freqScale: util.Observable(2),
-               Q: util.Observable(0.0001)
-           },
-           env: ts.ModEnv().parameter
+            osc: ts.ModOsc().parameter,
+            bqf: {
+                freqScale: util.Observable(2),
+                Q: util.Observable(0.0001)
+            },
+            env: ts.ModEnv().parameter
         };
         var bqf = ts.ModBqf();
-        var env = ts.ModEnv();        
+        var env = ts.ModEnv();
         var osc = null;
 
         bqf.connect(env.input);
@@ -305,47 +315,47 @@ define(['util'], function (util) {
             osc = ts.ModOsc();
             osc.parameter = that.parameter.osc;
             osc.connect(bqf.input);
-            
-            bqf.parameter.frequency = that.parameter.osc.frequency * that.parameter.bqf.freqScale();
-            bqf.parameter.Q = that.parameter.bqf.Q();
-            
+
+            var frequency = that.parameter.osc.frequency;
+            bqf.parameter.frequency = util.Observable(frequency * that.parameter.bqf.freqScale());
+            that.parameter.bqf.freqScale.subscribe(function (v) { bqf.parameter.frequency(frequency * v); });
+            bqf.parameter.Q = that.parameter.bqf.Q;
+
             env.parameter = that.parameter.env;
-            
+
             osc.start(t);
             bqf.start(t);
             env.start(t);
             return that;
         };
         that.stop = function (t) {
+            osc.onended = function () { console.log("onended"); bqf.dispose(); };
             osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
             env.stop(t);
-            osc = null;
             return that;
         };
 
         return that;
     };
 
-    ts.ModAsynth = function() {
+    ts.ModPoly = function (m) {
         var that = {};
         var gain = ts.ModGain();
         that.parameter = {
             gain: gain.parameter,
-            asynth1: ts.ModAsynth1().parameter
+            mono: m().parameter
         };
-        
+
         that.connect = function (dist) { gain.connect(dist); };
-        
-        that.start = function(t, freq) {
-            var v = ts.ModAsynth1();
+
+        that.start = function (t) {
+            var v = m();
             v.connect(gain.input);
-            
-            v.parameter = that.parameter.asynth1;
-            v.parameter.osc.frequency = freq;
-            
+            v.parameter = that.parameter.mono;
+
             return v.start(t);
         };
-        
+
         return that;
     };
 

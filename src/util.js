@@ -33,7 +33,7 @@ define(function () {
         var that = function () {
             if (arguments.length == 1) {  // update
                 value = arguments[0];
-                subscriber.map(function (s) { s(value); });
+                subscriber.map(function (s) { if(s) s(value); });
             }
 
             return value;
@@ -42,7 +42,11 @@ define(function () {
         that.subscribe = function (callback) {
             subscriber.push(callback);
 
-            return that;
+            return {
+                dispose: function() {
+                    subscriber[subscriber.indexof(callback)] = null;    // ad-hock: must be removed from array
+                }
+            };
         };
 
         return that;

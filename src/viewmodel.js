@@ -16,8 +16,8 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
 
         model.build();
         this.volume.subscribe(model.parameter.gain.gain);
-        this.freqscale.subscribe(model.parameter.asynth1.bqf.freqScale);
-        this.Q.subscribe(model.parameter.asynth1.bqf.Q);
+        this.freqscale.subscribe(model.parameter.mono.bqf.freqScale);
+        this.Q.subscribe(model.parameter.mono.bqf.Q);
         
         this.volume(0.5);
         this.freqscale(1.6);
