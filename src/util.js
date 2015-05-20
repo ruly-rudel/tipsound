@@ -44,14 +44,14 @@ define(function () {
 
             return {
                 dispose: function() {
-                    subscriber[subscriber.indexof(callback)] = null;    // ad-hock: must be removed from array
+                    subscriber[subscriber.indexOf(callback)] = null;    // ad-hock: must be removed from array
                 }
             };
         };
 
         return that;
     };
-
+    
     Function.prototype.method = function (name, func) {
         if (!this.prototype[name]) {
             this.prototype[name] = func;

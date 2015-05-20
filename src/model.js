@@ -17,7 +17,7 @@ define(['tipsound'], function (ts) {	// model
     };
 
     that.play = function (note) {
-        asynth.parameter.mono.osc.frequency = note;
+        asynth.parameter.mono.osc.frequency(note);
         return asynth.start(ts.ctx.currentTime);
     };
 
@@ -29,7 +29,7 @@ define(['tipsound'], function (ts) {	// model
         for (var j = 0; j < seq.length; j++) {
             for (var i = 0; i < seq[j].length; i++) {
                 if (seq[j][i] !== null) {
-                    asynth.parameter.mono.osc.frequency = seq[j][i];
+                    asynth.parameter.mono.osc.frequency(seq[j][i]);
                     asynth.start(ts.ctx.currentTime + i)
                         .stop(ts.ctx.currentTime + i + noteOff);
                 }

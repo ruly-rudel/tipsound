@@ -203,16 +203,21 @@ define(['util'], function (util) {
     // AudioNode Modules
     ts.ModOsc = function () {
         var that = {};
+        var subscriber = [];
+
         that.input = ts.ctx.createOscillator();
         that.parameter = {
-            type: "sawtooth",
-            frequency: 440
+            type: util.Observable("sawtooth"),
+            frequency: util.Observable(440)
         };
+        subscriber.push(that.parameter.frequency.subscribe(function (v) { that.input.frequency.value = v; }));
+        subscriber.push(that.parameter.type.subscribe(function (v) { that.input.type = v; }));
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
-            that.input.type = that.parameter.type;
-            that.input.frequency.setValueAtTime(that.parameter.frequency, t);
+            that.dispose();     // hmm... is good or not???
+            that.input.type = that.parameter.type();
+            that.input.frequency.setValueAtTime(that.parameter.frequency(), t);
             that.input.start(t);
 
             return that;
@@ -222,19 +227,29 @@ define(['util'], function (util) {
 
             return that;
         };
+        that.dispose = function (t) {
+            subscriber.map(function (x) { x.dispose(); });
+            subscriber = [];
+        };
 
         return that;
     };
 
     ts.ModGain = function () {
         var that = {};
+        var subscriber = [];
+        
         that.input = ts.ctx.createGain();
         that.parameter = {
             gain: util.Observable(1)
         };
-        that.parameter.gain.subscribe(function (v) { that.input.gain.value = v; });
+        subscriber.push(that.parameter.gain.subscribe(function (v) { that.input.gain.value = v; }));
 
         that.connect = function (dist) { that.input.connect(dist); };
+        that.dispose = function (t) {
+            subscriber.map(function (x) { x.dispose(); });
+            subscriber = [];
+        };        
 
         return that;
     };
@@ -268,13 +283,17 @@ define(['util'], function (util) {
 
     ts.ModBqf = function () {
         var that = {};
+        var subscriber = [];
+        
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
             frequency: util.Observable(880),
             Q: util.Observable(0.0001)
         };
+        that.parameter.frequency.subscribe(function (v) { that.input.frequency.value = v; });
+        that.parameter.Q.subscribe(function (v) { that.input.Q.value = v; });
 
-        var subscriber = [];
+
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
@@ -296,32 +315,33 @@ define(['util'], function (util) {
 
     ts.ModAsynth = function () {
         var that = {};
-        that.parameter = {
-            osc: ts.ModOsc().parameter,
-            bqf: {
-                freqScale: util.Observable(2),
-                Q: util.Observable(0.0001)
-            },
-            env: ts.ModEnv().parameter
-        };
+        var subscriber = [];
+        
+        var osc = ts.ModOsc();
         var bqf = ts.ModBqf();
         var env = ts.ModEnv();
-        var osc = null;
+
+        // parameter prototype
+        that.parameter = {
+            osc: osc.parameter,
+            bqf: bqf.parameter,
+            env: env.parameter
+        };
+        that.parameter.bqf.freqScale = util.Observable(2);
 
         bqf.connect(env.input);
+        osc.connect(bqf.input);
 
         that.connect = function (dist) { env.connect(dist); };
         that.start = function (t) {
-            osc = ts.ModOsc();
+            // bind parameters
             osc.parameter = that.parameter.osc;
-            osc.connect(bqf.input);
-
-            var frequency = that.parameter.osc.frequency;
-            bqf.parameter.frequency = util.Observable(frequency * that.parameter.bqf.freqScale());
-            that.parameter.bqf.freqScale.subscribe(function (v) { bqf.parameter.frequency(frequency * v); });
-            bqf.parameter.Q = that.parameter.bqf.Q;
-
+            bqf.parameter = that.parameter.bqf;
             env.parameter = that.parameter.env;
+
+            var frequency = that.parameter.osc.frequency();
+            bqf.parameter.frequency(frequency * that.parameter.bqf.freqScale());
+            subscriber.push(that.parameter.bqf.freqScale.subscribe(function (v) { bqf.parameter.frequency(frequency * v); }));
 
             osc.start(t);
             bqf.start(t);
@@ -329,10 +349,14 @@ define(['util'], function (util) {
             return that;
         };
         that.stop = function (t) {
-            osc.onended = function () { console.log("onended"); bqf.dispose(); };
+            osc.onended = function (ev) { console.log("onended"); that.dispose(); };
             osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
             env.stop(t);
             return that;
+        };
+        that.dispose = function () {
+            subscriber.map(function (x) { x.dispose(); });
+            subscriber = [];
         };
 
         return that;
@@ -358,6 +382,6 @@ define(['util'], function (util) {
 
         return that;
     };
-
+    
     return ts;
 });
