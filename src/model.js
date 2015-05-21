@@ -1,6 +1,7 @@
 define(['tipsound'], function (ts) {	// model
     "use strict";
     var that = {};
+    that.ts = ts;
     
     var asynth = null;
 
@@ -21,9 +22,9 @@ define(['tipsound'], function (ts) {	// model
         return asynth.start(ts.ctx.currentTime);
     };
 
-    that.playChord = function (c) {
-        var ca = c.split(/\s/);
-        var seq = ts.chordToSequence(ca, ts.closedVoicing);
+    that.playChord = function (c, c2s, voice, br) {
+        var ca = c.split(/[\s|]/).filter(function(s) { return s != ""; });
+        var seq = c2s(ca, voice, br);
         
         var an = {};
         for(var i = 0; i < seq.length; i++) {

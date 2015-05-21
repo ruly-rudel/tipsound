@@ -7,10 +7,12 @@
 </head>
 <body>
     <h1>tipsound.js</h1>
-    <ul data-bind="foreach: Object.keys(test())">
-        <li><span data-bind="text: $data"></span>: <span data-bind="text: $parent.test()[$data]"></span></li>
+    <!--
+    <ul data-bind="foreach: Object.keys(breakMethodKind())">
+        <li><span data-bind="text: $data"></span>: <span data-bind="text: $parent.breakMethodKind()[$data]"></span></li>
     </ul>
-    <input type="text" id="chord" data-bind="value: chord" />
+    -->
+    <textarea type="text" id="chord" rows="10" cols="30" data-bind="value: chord"></textarea>
     <br />
     <span data-bind="text: volume"></span>
     <input type="range" id="volume" min="0.0" max="1.0" step="0.01" data-bind="value: volume" />
@@ -21,6 +23,7 @@
     <span data-bind="text: Q"></span>
     <input type="range" id="Q" min="0.0001" max="30" step="0.0001" data-bind="value: Q" />
     <br />
+    <select data-bind="options: breakMethodKind, value: breakMethod, valueAllowUnset: true" size="5" multiple="false"></select>
     <input type="button" id="play" value="play" data-bind="click: playChord"/>
     <input type="button" id="stop" value="stop" data-bind="click: recycle"/>
 </body>

@@ -20,13 +20,33 @@ define(['util'], function (util) {
         major6: 9,
         minor7: 10,
         major7: 11,
+        
+        Cb: -10,
         C: -9,
+        Cs: -8,
+        
+        Db: -8,
         D: -7,
+        Ds: -6,
+        
+        Eb: -6,
         E: -5,
+        
+        Fb: -5,
         F: -4,
+        Fs: -3,
+        
+        Gb: -3,
         G: -2,
+        Gs: -1,
+        
+        Ab: -1,
         A: 0,
-        B: 2
+        As: 1,
+        
+        Bb: 1,
+        B: 2,
+        Bs: 3
     };
 
 
@@ -38,11 +58,23 @@ define(['util'], function (util) {
         var third = "major3";   // ad-hock: to be fixed
         var fifth = "perfect5"; // ad-hock: to be fixed
         var seventh;
+        var onchord;
 
         while (pos < chord.length) {
             switch (st) {
                 case 0:     // root note
                     root = chord[pos++];
+                    st = 0.5; // to sharp/flat
+                    break;
+                    
+                case 0.5:   // sharp/flat
+                    if(chord[pos] == "#") {
+                        root = root + "s";
+                        pos++;
+                    } else if(chord[pos] == "b") {
+                        root = root + "b";
+                        pos++;
+                    }
                     st = 1; // to 3rd
                     break;
 
@@ -118,7 +150,7 @@ define(['util'], function (util) {
                         pos++;
                         st = 9;
                     } else {
-                        fifth = "perfetc5";
+                        fifth = "perfect5";
                         st = 13;                // on-code
                     }
                     break;
@@ -163,8 +195,28 @@ define(['util'], function (util) {
                     }
                     break;
                 case 13: // on-code
-                    throw new Error("on-code is not implemented yet.");
+                    if(chord[pos] == "/") {
+                        pos++;
+                        st = 14;    // on code check
+                    } else {
+                        throw new Error("parse error.");
+                    }
                     break;
+                case 14:
+                    onchord = chord[pos++];
+                    st = 15;
+                    break;
+                case 15:
+                    if(chord[pos] == "#") {
+                        onchord = onchord + "s";
+                        pos++;
+                    } else if(chord[pos] == "b") {
+                        onchord = onchord + "b";
+                        pos++;
+                    }
+                    st = -1; // to error: must be reached.
+                    break;                    
+                    
                 default:
                     throw new Error("parser internal error.");
                     break;
@@ -172,27 +224,54 @@ define(['util'], function (util) {
             }
         }
 
-        return { "root": root, offset: ["perfect1", third, fifth, seventh] };
+        return { "root": root, "onchord": onchord, offset: ["perfect1", third, fifth, seventh]};
+    };
+    
+    ts.tabDegree = [18, 23, 28, 33, 37, 42];
+    
+    ts.parseTab = function(tab) {
+        return util.mapcar(function(a, b) { return b == null ? null : b + a; }, [ts.tabDegree, tab]);
     };
 
     ts.noteToFreq = function (n) {
         return Math.pow(2,(n - 33) / 12) * 440;
     };
 
+    ts.simpleVoicing = function (chord) {
+        var root = ts.chordDegree[chord.root];
+        var voice = chord.offset.map(function (x) {
+            if (x === undefined) {
+                return null;
+            } else {
+                var cd = ts.chordDegree[x].integer() + 33 - 12 + root;
+                return cd;
+            }            
+        });
+        if(chord.onchord !== undefined) {
+            var on = ts.chordDegree[chord.onchord].integer() + 33 - 12;
+            if(on > root) { on -= 12; }
+            voice.unshift(on);
+        }
+        
+        return voice;
+    };
+
+    /*
     ts.closedVoicing = function (chord) {
         var root = ts.chordDegree[chord.root];
         return chord.offset.map(function (x) {
             if (x === undefined) {
                 return null;
             } else {
-                var cd = ts.chordDegree[x].integer() + 33 + root;
-                if (cd > 35) {
+                var cd = ts.chordDegree[x].integer() + 33 - 12 + root;
+                if (cd > 35 - 12) {
                     cd -= 12;
                 }
                 return cd;
             }
         });
     };
+    */
 
     ts.chordToSequence = function (chords, voicing) {
         var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
@@ -202,12 +281,36 @@ define(['util'], function (util) {
             for (var i = 0; i < c[j].length; i++) {
                 if (c[j][i] !== null) {
                     seq.push({ time: j, inst: "noteOn", note: c[j][i]});
-                    seq.push({ time: j + 1, inst: "noteOff", note: c[j][i]});
+                    seq.push({ time: j + 0.99, inst: "noteOff", note: c[j][i]});
                 }
             }
         }
 
+        seq.sort(function(a, b) { return a.time - b.time; });
         return seq;
+    };
+
+    ts.chordToSequenceBroken = function (chords, voicing, br) {
+        var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
+        
+        var seq = [];
+        var t = 0;
+        for (var j = 0; j < c.length; j++) {
+            var bc = br(c[j]);            
+            for (var i = 0; i < bc.length; i++) {
+                if(bc[i].inst != "dummy")
+                    seq.push({ time: t + bc[i].time, inst: bc[i].inst, note: bc[i].note});
+            }
+            t = t + bc[bc.length - 1].time;
+        }
+
+        seq.sort(function(a, b) { return a.time - b.time; });
+        return seq;
+    };
+    
+    ts.tabToSequence = function (tabs) {
+        var t = util.map.call(tabs, ts.parseTab);
+        
     };
 
     //
