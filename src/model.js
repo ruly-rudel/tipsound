@@ -37,5 +37,9 @@ define(['tipsound'], function (ts) {	// model
         }
     };
     
+    that.recycle = function() {
+        asynth.recycle(ts.ctx.currentTime);
+    };
+    
     return that;
 });

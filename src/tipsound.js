@@ -364,6 +364,7 @@ define(['util'], function (util) {
 
     ts.ModPoly = function (m) {
         var that = {};
+        var objq = [];
         var gain = ts.ModGain();
         that.parameter = {
             gain: gain.parameter,
@@ -377,7 +378,15 @@ define(['util'], function (util) {
             v.connect(gain.input);
             v.parameter = that.parameter.mono;
 
-            return v.start(t);
+            var q = v.start(t);
+            objq.push({time: t, obj: q});
+            return q;
+        };
+        that.recycle = function(t) {
+            while(objq.length != 0 && objq[0].time < t) {
+                objq[0].obj.dispose();
+                objq.shift();
+            }
         };
 
         return that;

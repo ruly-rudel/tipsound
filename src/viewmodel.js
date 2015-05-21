@@ -12,7 +12,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
         //this.test = ko.observable([{hoge: "fuga", hige: "hare"}, {hoge: "fuga2", hige: "hare2"}]);
         
         this.playChord = function () { model.playChord(this.chord()); };
-        this.stop = function() { model.stop(0); };
+        this.recycle = function() { model.recycle(); };
 
         model.build();
         this.volume.subscribe(model.parameter.gain.gain);
