@@ -189,15 +189,26 @@ define(['util'], function (util) {
                 if (cd > 35) {
                     cd -= 12;
                 }
-                return ts.noteToFreq(cd);
+                return cd;
             }
         });
     };
 
     ts.chordToSequence = function (chords, voicing) {
-        return util.mapcar(function () { return arguments; }, util.map.call(chords, util.compose(voicing, ts.parseChord)));
+        var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
+        
+        var seq = [];
+        for (var j = 0; j < c.length; j++) {
+            for (var i = 0; i < c[j].length; i++) {
+                if (c[j][i] !== null) {
+                    seq.push({ time: j, inst: "noteOn", note: c[j][i]});
+                    seq.push({ time: j + 1, inst: "noteOff", note: c[j][i]});
+                }
+            }
+        }
+
+        return seq;
     };
-    
 
     //
     // AudioNode Modules
@@ -349,7 +360,6 @@ define(['util'], function (util) {
             return that;
         };
         that.stop = function (t) {
-            osc.onended = function (ev) { console.log("onended"); that.dispose(); };
             osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
             env.stop(t);
             return that;

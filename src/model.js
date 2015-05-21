@@ -24,16 +24,22 @@ define(['tipsound'], function (ts) {	// model
     that.playChord = function (c) {
         var ca = c.split(/\s/);
         var seq = ts.chordToSequence(ca, ts.closedVoicing);
-        var noteOff = 2.0;
-
-        for (var j = 0; j < seq.length; j++) {
-            for (var i = 0; i < seq[j].length; i++) {
-                if (seq[j][i] !== null) {
-                    asynth.parameter.mono.osc.frequency(seq[j][i]);
-                    asynth.start(ts.ctx.currentTime + i)
-                        .stop(ts.ctx.currentTime + i + noteOff);
-                }
-            }
+        
+        var an = {};
+        for(var i = 0; i < seq.length; i++) {
+            switch(seq[i].inst) {
+                case "noteOn":
+                    asynth.parameter.mono.osc.frequency(ts.noteToFreq(seq[i].note));
+                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time);
+                    break;
+                case "noteOff":
+                    an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
+                    an[seq[i].note] = null;
+                    break;
+                default:
+                    throw new Error();
+                    break;
+            };
         }
     };
     
