@@ -383,5 +383,30 @@ define(['util'], function (util) {
         return that;
     };
     
+    ts.ModBuilder = function(arg) {
+        var that = {};
+        var subscriber = [];
+        var mod = {};
+        
+        // create AudioNodes or Modules
+        arg.map(function(t) { mod[t.name] = t.fn(); });
+        var first = mod[arg[0].name];
+        var last = mod[arg[arg.length - 1].name]; 
+        that.input = first.input;
+        
+        // create parameter
+        that.parameter = {};
+        arg.map(function(t) { that.parameter[t.name] = mod[t.name].parameter; });
+        
+        that.connect = function (dist) { last.connect(dist); };
+        
+        that.dispose = function () {
+            subscriber.map(function (x) { x.dispose(); });
+            subscriber = [];
+        };
+    };
+
+
+    
     return ts;
 });
