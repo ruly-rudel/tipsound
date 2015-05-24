@@ -20,30 +20,30 @@ define(['util'], function (util) {
         major6: 9,
         minor7: 10,
         major7: 11,
-        
+
         Cb: -10,
         C: -9,
         Cs: -8,
-        
+
         Db: -8,
         D: -7,
         Ds: -6,
-        
+
         Eb: -6,
         E: -5,
-        
+
         Fb: -5,
         F: -4,
         Fs: -3,
-        
+
         Gb: -3,
         G: -2,
         Gs: -1,
-        
+
         Ab: -1,
         A: 0,
         As: 1,
-        
+
         Bb: 1,
         B: 2,
         Bs: 3
@@ -66,12 +66,12 @@ define(['util'], function (util) {
                     root = chord[pos++];
                     st = 0.5; // to sharp/flat
                     break;
-                    
+
                 case 0.5:   // sharp/flat
-                    if(chord[pos] == "#") {
+                    if (chord[pos] == "#") {
                         root = root + "s";
                         pos++;
-                    } else if(chord[pos] == "b") {
+                    } else if (chord[pos] == "b") {
                         root = root + "b";
                         pos++;
                     }
@@ -195,7 +195,7 @@ define(['util'], function (util) {
                     }
                     break;
                 case 13: // on-code
-                    if(chord[pos] == "/") {
+                    if (chord[pos] == "/") {
                         pos++;
                         st = 14;    // on code check
                     } else {
@@ -207,16 +207,16 @@ define(['util'], function (util) {
                     st = 15;
                     break;
                 case 15:
-                    if(chord[pos] == "#") {
+                    if (chord[pos] == "#") {
                         onchord = onchord + "s";
                         pos++;
-                    } else if(chord[pos] == "b") {
+                    } else if (chord[pos] == "b") {
                         onchord = onchord + "b";
                         pos++;
                     }
                     st = -1; // to error: must be reached.
-                    break;                    
-                    
+                    break;
+
                 default:
                     throw new Error("parser internal error.");
                     break;
@@ -224,13 +224,13 @@ define(['util'], function (util) {
             }
         }
 
-        return { "root": root, "onchord": onchord, offset: ["perfect1", third, fifth, seventh]};
+        return { "root": root, "onchord": onchord, offset: ["perfect1", third, fifth, seventh] };
     };
-    
+
     ts.tabDegree = [18, 23, 28, 33, 37, 42];
-    
-    ts.parseTab = function(tab) {
-        return util.mapcar(function(a, b) { return b == null ? null : b + a; }, [ts.tabDegree, tab]);
+
+    ts.parseTab = function (tab) {
+        return util.mapcar(function (a, b) { return b == null ? null : b + a; }, [ts.tabDegree, tab]);
     };
 
     ts.noteToFreq = function (n) {
@@ -245,14 +245,14 @@ define(['util'], function (util) {
             } else {
                 var cd = ts.chordDegree[x].integer() + 33 - 12 + root;
                 return cd;
-            }            
+            }
         });
-        if(chord.onchord !== undefined) {
+        if (chord.onchord !== undefined) {
             var on = ts.chordDegree[chord.onchord].integer() + 33 - 12;
-            if(on > root) { on -= 12; }
+            if (on > root) { on -= 12; }
             voice.unshift(on);
         }
-        
+
         return voice;
     };
 
@@ -273,44 +273,54 @@ define(['util'], function (util) {
     };
     */
 
+    ts.chordToKick = function (chords) {
+        var seq = [];
+        for (var j = 0; j < chords.length; j++) {
+            seq.push({ time: j, inst: "noteOn", note: "kick" });
+            seq.push({ time: j + 0.99, inst: "noteOff", note: "kick" });
+        }
+
+        return seq;
+    };
+
     ts.chordToSequence = function (chords, voicing) {
         var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
-        
+
         var seq = [];
         for (var j = 0; j < c.length; j++) {
             for (var i = 0; i < c[j].length; i++) {
                 if (c[j][i] !== null) {
-                    seq.push({ time: j, inst: "noteOn", note: c[j][i]});
-                    seq.push({ time: j + 0.99, inst: "noteOff", note: c[j][i]});
+                    seq.push({ time: j, inst: "noteOn", note: c[j][i] });
+                    seq.push({ time: j + 0.99, inst: "noteOff", note: c[j][i] });
                 }
             }
         }
 
-        seq.sort(function(a, b) { return a.time - b.time; });
+        seq.sort(function (a, b) { return a.time - b.time; });
         return seq;
     };
 
     ts.chordToSequenceBroken = function (chords, voicing, br) {
         var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
-        
+
         var seq = [];
         var t = 0;
         for (var j = 0; j < c.length; j++) {
-            var bc = br(c[j]);            
+            var bc = br(c[j]);
             for (var i = 0; i < bc.length; i++) {
-                if(bc[i].inst != "dummy")
-                    seq.push({ time: t + bc[i].time, inst: bc[i].inst, note: bc[i].note});
+                if (bc[i].inst != "dummy")
+                    seq.push({ time: t + bc[i].time, inst: bc[i].inst, note: bc[i].note });
             }
             t = t + bc[bc.length - 1].time;
         }
 
-        seq.sort(function(a, b) { return a.time - b.time; });
+        seq.sort(function (a, b) { return a.time - b.time; });
         return seq;
     };
-    
+
     ts.tabToSequence = function (tabs) {
         var t = util.map.call(tabs, ts.parseTab);
-        
+
     };
 
     //
@@ -352,7 +362,7 @@ define(['util'], function (util) {
     ts.ModGain = function () {
         var that = {};
         var subscriber = [];
-        
+
         that.input = ts.ctx.createGain();
         that.parameter = {
             gain: util.Observable(1)
@@ -363,7 +373,7 @@ define(['util'], function (util) {
         that.dispose = function (t) {
             subscriber.map(function (x) { x.dispose(); });
             subscriber = [];
-        };        
+        };
 
         return that;
     };
@@ -383,12 +393,12 @@ define(['util'], function (util) {
             that.input.gain.setValueAtTime(0, t);    // zero
             that.input.gain.linearRampToValueAtTime(1, t + that.parameter.attack); // attack
             that.input.gain.setTargetAtTime(that.parameter.sustain, t + that.parameter.attack, that.parameter.decay); // decay, sustain
-            
+
             return that;
         };
         that.stop = function (t) {
-            that.input.gain.setTargetAtTime(0, t, that.parameter.release);    // release 
-            
+            that.input.gain.setTargetAtTime(0, t, that.parameter.release);    // release
+
             return that;
         };
 
@@ -398,7 +408,7 @@ define(['util'], function (util) {
     ts.ModBqf = function () {
         var that = {};
         var subscriber = [];
-        
+
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
             frequency: util.Observable(880),
@@ -430,7 +440,7 @@ define(['util'], function (util) {
     ts.ModAsynth = function () {
         var that = {};
         var subscriber = [];
-        
+
         var osc = ts.ModOsc();
         var bqf = ts.ModBqf();
         var env = ts.ModEnv();
@@ -492,11 +502,11 @@ define(['util'], function (util) {
             v.parameter = that.parameter.mono;
 
             var q = v.start(t);
-            objq.push({time: t, obj: q});
+            objq.push({ time: t, obj: q });
             return q;
         };
-        that.recycle = function(t) {
-            while(objq.length != 0 && objq[0].time < t) {
+        that.recycle = function (t) {
+            while (objq.length !== 0 && objq[0].time < t) {  // is bug: time is not the end of the note.
                 objq[0].obj.dispose();
                 objq.shift();
             }
@@ -504,24 +514,48 @@ define(['util'], function (util) {
 
         return that;
     };
-    
-    ts.ModBuilder = function(arg) {
+
+    ts.ModBuffer = function () {
+        var that = {};
+        that.parameter = {
+            buffer: null
+        };
+
+        var b = ts.ctx.createBufferSource();
+
+        that.connect = function (dist) { b.connect(dist); };
+
+        that.start = function (t) {
+            b.buffer = that.parameter.buffer;
+            b.start(t);
+
+            return that;
+        };
+        that.stop = function (t) {
+            b.stop(t);
+            return that;
+        };
+
+        return that;
+    };
+
+    ts.ModBuilder = function (arg) {
         var that = {};
         var subscriber = [];
         var mod = {};
-        
+
         // create AudioNodes or Modules
-        arg.map(function(t) { mod[t.name] = t.fn(); });
+        arg.map(function (t) { mod[t.name] = t.fn(); });
         var first = mod[arg[0].name];
-        var last = mod[arg[arg.length - 1].name]; 
+        var last = mod[arg[arg.length - 1].name];
         that.input = first.input;
-        
+
         // create parameter
         that.parameter = {};
-        arg.map(function(t) { that.parameter[t.name] = mod[t.name].parameter; });
-        
+        arg.map(function (t) { that.parameter[t.name] = mod[t.name].parameter; });
+
         that.connect = function (dist) { last.connect(dist); };
-        
+
         that.dispose = function () {
             subscriber.map(function (x) { x.dispose(); });
             subscriber = [];
@@ -529,6 +563,6 @@ define(['util'], function (util) {
     };
 
 
-    
+
     return ts;
 });
