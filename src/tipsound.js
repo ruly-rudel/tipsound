@@ -317,6 +317,20 @@ define(['util'], function (util) {
         seq.sort(function (a, b) { return a.time - b.time; });
         return seq;
     };
+    
+    ts.abcToSequence = function () {
+        var meter = {
+            num: 4,
+            dino: 4
+        };
+        var length = 1/8;
+        var tempo = 100;
+        var key = "C";
+        
+        return function(abc) {
+            
+        };
+    }();
 
     ts.tabToSequence = function (tabs) {
         var t = util.map.call(tabs, ts.parseTab);

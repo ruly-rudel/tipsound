@@ -30,9 +30,23 @@ define(['tipsound'], function (ts) {	// model
         kick.connect(ts.ctx.destination);
     };
 
-    that.play = function (note) {
-        asynth.parameter.mono.osc.frequency(note);
-        return asynth.start(ts.ctx.currentTime);
+    that.play = function (abc) {
+        var seq = ts.abcToSequence(abc);
+        var an = {};
+        for (var i = 0; i < seq.length; i++) {
+            switch (seq[i].inst) {
+                case "noteOn":
+                    asynth.parameter.mono.osc.frequency(ts.noteToFreq(seq[i].note));
+                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time);
+                    break;
+                case "noteOff":
+                    an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
+                    an[seq[i].note] = null;
+                    break;
+                default:
+                    throw new Error();
+            }
+        }
     };
 
     that.playChord = function (c, c2s, voice, br) {
@@ -71,7 +85,7 @@ define(['tipsound'], function (ts) {	// model
             }
         }
     };
-
+    
 
     that.recycle = function () {
         asynth.recycle(ts.ctx.currentTime);
