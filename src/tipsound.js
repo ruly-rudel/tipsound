@@ -550,6 +550,44 @@ define(['util'], function (util) {
 
         return that;
     };
+    
+    ts.ModPolySeq = function() {
+        var that = {};
+        that.sequence = null;
+        that.delta = 0.1;
+        
+        var modPoly = null;
+        var begin = 0;
+        var seq = null;
+        var an = {};
+        
+        that.connect = function(dist) { modPoly = dist; };
+        
+        that.start = function(t) {
+            begin = t;
+            seq = [].concat(that.sequence);
+            that.enque(ts.ctx.currentTime);
+        };
+        
+        that.enque = function(t) {
+            while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
+                switch (seq[0].inst) {
+                    case "noteOn":
+                        an[seq[0].note] = modPoly.start(begin + seq[0].time, seq[0].note);
+                        break;
+                    case "noteOff":
+                        an[seq[0].note].stop(begin + seq[0].time);
+                        an[seq[0].note] = null;
+                        break;
+                    default:
+                        throw new Error();
+                }
+                seq.shift();
+            }
+        };
+        
+        return that;
+    };
 
     ts.ModBuilder = function (arg) {
         var that = {};

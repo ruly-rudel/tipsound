@@ -5,6 +5,7 @@ define(['tipsound'], function (ts) {	// model
 
     var asynth = null;
     var kick = null;
+    var seq = null;
 
     that.build = function () {
         asynth = ts.ModPoly(ts.ModAsynth);
@@ -16,6 +17,9 @@ define(['tipsound'], function (ts) {	// model
 
         asynth.connect(ts.ctx.destination);
         that.parameter = asynth.parameter;
+        
+        seq = ts.ModPolySeq();
+        seq.connect(asynth);
 
         kick = ts.ModPoly(ts.ModBuffer);
         kick.parameter.mono.buffer = ts.ctx.createBuffer(1, ts.ctx.sampleRate * 1, ts.ctx.sampleRate);
@@ -50,23 +54,15 @@ define(['tipsound'], function (ts) {	// model
 
     that.playChord = function (c, c2s, voice, br) {
         var ca = c.split(/[\s|]/).filter(function (s) { return s != ""; });
-        var seq = c2s(ca, voice, br);
-        var kickseq = ts.chordToKick(ca);
-
-        var an = {};
-        for (var i = 0; i < seq.length; i++) {
-            switch (seq[i].inst) {
-                case "noteOn":
-                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time, seq[i].note);
-                    break;
-                case "noteOff":
-                    an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
-                    an[seq[i].note] = null;
-                    break;
-                default:
-                    throw new Error();
-            }
+        seq.sequence = c2s(ca, voice, br);
+        var t = ts.ctx.currentTime;
+        seq.start(t);
+        var max = Math.max.apply(null, seq.sequence.map(function(x) { return x.time; }));
+        for(var i = 0; i < max; i += 0.0015) {
+            seq.enque(t + i);
         }
+        /*
+        var kickseq = ts.chordToKick(ca);
 
         var kn = {};
         for (i = 0; i < kickseq.length; i++) {
@@ -82,6 +78,7 @@ define(['tipsound'], function (ts) {	// model
                     throw new Error();
             }
         }
+        */
     };
     
 
