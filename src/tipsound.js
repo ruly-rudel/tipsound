@@ -345,17 +345,15 @@ define(['util'], function (util) {
 
         that.input = ts.ctx.createOscillator();
         that.parameter = {
-            type: util.Observable("sawtooth"),
-            frequency: util.Observable(440)
+            type: util.Observable("sawtooth")
         };
-        subscriber.push(that.parameter.frequency.subscribe(function (v) { that.input.frequency.value = v; }));
         subscriber.push(that.parameter.type.subscribe(function (v) { that.input.type = v; }));
 
         that.connect = function (dist) { that.input.connect(dist); };
-        that.start = function (t) {
+        that.start = function (t, note) {
             that.dispose();     // hmm... is good or not???
             that.input.type = that.parameter.type();
-            that.input.frequency.setValueAtTime(that.parameter.frequency(), t);
+            that.input.frequency.setValueAtTime(ts.noteToFreq(note), t);
             that.input.start(t);
 
             return that;
@@ -471,17 +469,17 @@ define(['util'], function (util) {
         osc.connect(bqf.input);
 
         that.connect = function (dist) { env.connect(dist); };
-        that.start = function (t) {
+        that.start = function (t, note) {
             // bind parameters
             osc.parameter = that.parameter.osc;
             bqf.parameter = that.parameter.bqf;
             env.parameter = that.parameter.env;
 
-            var frequency = that.parameter.osc.frequency();
+            var frequency = ts.noteToFreq(note);
             bqf.parameter.frequency(frequency * that.parameter.bqf.freqScale());
             subscriber.push(that.parameter.bqf.freqScale.subscribe(function (v) { bqf.parameter.frequency(frequency * v); }));
 
-            osc.start(t);
+            osc.start(t, note);
             bqf.start(t);
             env.start(t);
             return that;
@@ -510,12 +508,12 @@ define(['util'], function (util) {
 
         that.connect = function (dist) { gain.connect(dist); };
 
-        that.start = function (t) {
+        that.start = function (t, note) {
             var v = m();
             v.connect(gain.input);
             v.parameter = that.parameter.mono;
 
-            var q = v.start(t);
+            var q = v.start(t, note);
             objq.push({ time: t, obj: q });
             return q;
         };

@@ -36,8 +36,7 @@ define(['tipsound'], function (ts) {	// model
         for (var i = 0; i < seq.length; i++) {
             switch (seq[i].inst) {
                 case "noteOn":
-                    asynth.parameter.mono.osc.frequency(ts.noteToFreq(seq[i].note));
-                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time);
+                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time, seq[i].note);
                     break;
                 case "noteOff":
                     an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
@@ -58,8 +57,7 @@ define(['tipsound'], function (ts) {	// model
         for (var i = 0; i < seq.length; i++) {
             switch (seq[i].inst) {
                 case "noteOn":
-                    asynth.parameter.mono.osc.frequency(ts.noteToFreq(seq[i].note));
-                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time);
+                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time, seq[i].note);
                     break;
                 case "noteOff":
                     an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
