@@ -563,16 +563,20 @@ define(['util'], function (util) {
         
         that.connect = function(dist) { modPoly = dist; };
         
-        that.start = function(t) {
+        that.invoke = function(t) {
             begin = t;
             seq = [].concat(that.sequence);
             that.enque(ts.ctx.currentTime);
         };
         
-        that.enque = function(t) {
+        that.enque = function() {
+            var t = ts.ctx.currentTime;
+            modPoly.recycle(t);
             while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
+                console.log("time: " + t);
                 switch (seq[0].inst) {
                     case "noteOn":
+                        console.log(" noteOn: " + seq[0].note + " at " + (seq[0].time + begin));
                         an[seq[0].note] = modPoly.start(begin + seq[0].time, seq[0].note);
                         break;
                     case "noteOff":
@@ -583,6 +587,9 @@ define(['util'], function (util) {
                         throw new Error();
                 }
                 seq.shift();
+            }
+            if(seq.length > 0) {
+                setTimeout(that.enque, 10);
             }
         };
         

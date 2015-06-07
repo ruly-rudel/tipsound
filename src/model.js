@@ -56,11 +56,13 @@ define(['tipsound'], function (ts) {	// model
         var ca = c.split(/[\s|]/).filter(function (s) { return s != ""; });
         seq.sequence = c2s(ca, voice, br);
         var t = ts.ctx.currentTime;
-        seq.start(t);
+        seq.invoke(t);
+        /*
         var max = Math.max.apply(null, seq.sequence.map(function(x) { return x.time; }));
         for(var i = 0; i < max; i += 0.0015) {
             seq.enque(t + i);
         }
+        */
         /*
         var kickseq = ts.chordToKick(ca);
 
