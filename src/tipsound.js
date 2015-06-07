@@ -426,15 +426,19 @@ define(['util'], function (util) {
             frequency: util.Observable(880),
             Q: util.Observable(0.0001)
         };
+        /*
         that.parameter.frequency.subscribe(function (v) { that.input.frequency.value = v; });
         that.parameter.Q.subscribe(function (v) { that.input.Q.value = v; });
+        */
 
 
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
+            /*
             subscriber.push(that.parameter.frequency.subscribe(function (v) { that.input.frequency.setValueAtTime(v, t); }));
             subscriber.push(that.parameter.Q.subscribe(function (v) { that.input.Q.setValueAtTime(v, t); }));
+            */
 
             that.input.frequency.setValueAtTime(that.parameter.frequency(), t);
             that.input.Q.setValueAtTime(that.parameter.Q(), t);
