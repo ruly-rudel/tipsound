@@ -89,7 +89,7 @@ define(['tipsound'], function (ts) {	// model
     };
     
     that.stop = function() {
-        seq.push({ inst: "stop" });
+        seq.post({ inst: "stop" });
     };
 
     return that;

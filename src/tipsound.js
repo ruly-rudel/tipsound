@@ -570,23 +570,22 @@ define(['util'], function (util) {
         that.connect = function(dist) { modPoly = dist; };
         
         that.invoke = function(t) {
-            begin = t;
-            seq = [].concat(that.sequence);
-            isrun = true;
-            that.enque(ts.ctx.currentTime);
-        };
-        
-        that.push = function(x) {
-            if(isrun) {
-                cmd.push(x);
+            if(!isrun) {
+                begin = t;
+                seq = [].concat(that.sequence);
+                isrun = true;
+                enque(ts.ctx.currentTime);                
             }
         };
         
+        that.post = function(x) {
+            cmd.push(x);
+            if(!isrun) {
+                dispatch();
+            }
+        };
         
-        that.enque = function() {
-            var t = ts.ctx.currentTime;
-            modPoly.recycle(t);
-            
+        var dispatch = function() {
             // cmd
             while(cmd.length > 0) {
                 var c = cmd.shift();
@@ -597,7 +596,15 @@ define(['util'], function (util) {
                     default:
                         break;                        
                 }
-            }
+            }            
+        };
+        
+        var enque = function() {
+            var t = ts.ctx.currentTime;
+            modPoly.recycle(t);
+            
+            dispatch();
+            if(!isrun) return ;
             
             // enque
             while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
@@ -617,7 +624,7 @@ define(['util'], function (util) {
                 seq.shift();
             }
             if(seq.length > 0) {
-                setTimeout(that.enque, 10);
+                setTimeout(enque, 10);
             } else {
                 isrun = false;
             }            
