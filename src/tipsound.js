@@ -564,18 +564,42 @@ define(['util'], function (util) {
         var begin = 0;
         var seq = null;
         var an = {};
+        var cmd = [];
+        var isrun = false;
         
         that.connect = function(dist) { modPoly = dist; };
         
         that.invoke = function(t) {
             begin = t;
             seq = [].concat(that.sequence);
+            isrun = true;
             that.enque(ts.ctx.currentTime);
         };
+        
+        that.push = function(x) {
+            if(isrun) {
+                cmd.push(x);
+            }
+        };
+        
         
         that.enque = function() {
             var t = ts.ctx.currentTime;
             modPoly.recycle(t);
+            
+            // cmd
+            while(cmd.length > 0) {
+                var c = cmd.shift();
+                switch(c.inst) {
+                    case 'stop':
+                        isrun = false;
+                        return;
+                    default:
+                        break;                        
+                }
+            }
+            
+            // enque
             while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
                 console.log("time: " + t);
                 switch (seq[0].inst) {
@@ -594,7 +618,9 @@ define(['util'], function (util) {
             }
             if(seq.length > 0) {
                 setTimeout(that.enque, 10);
-            }
+            } else {
+                isrun = false;
+            }            
         };
         
         return that;

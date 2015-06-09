@@ -164,6 +164,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
                 );
         };
         this.recycle = function () { model.recycle(); };
+        this.stop = function() { model.stop(); };
 
         model.build();
         this.volume.subscribe(model.parameter.gain.gain);

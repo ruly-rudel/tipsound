@@ -87,6 +87,10 @@ define(['tipsound'], function (ts) {	// model
     that.recycle = function () {
         asynth.recycle(ts.ctx.currentTime);
     };
+    
+    that.stop = function() {
+        seq.push({ inst: "stop" });
+    };
 
     return that;
 });
