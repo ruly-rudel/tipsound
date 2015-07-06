@@ -140,6 +140,21 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
                 ];
             }
         };
+        
+        this.synth = ko.observable(
+            "local.asynth = ts.ModPoly(ts.ModAsynth);\n\n" +
+    
+            "local.asynth.parameter.mono.env.attack = 0.0;\n" +
+            "local.asynth.parameter.mono.env.decay = 0.4;\n" +
+            "local.asynth.parameter.mono.env.sustain = 0.0;\n" +
+            "local.asynth.parameter.mono.env.release = 0.0;\n\n" +
+    
+            "local.asynth.connect(ts.ctx.destination);\n" +
+            "that.parameter = local.asynth.parameter;\n\n" +
+            
+            "local.seq = ts.ModPolySeq();\n" +
+            "local.seq.connect(local.asynth);\n"
+        );
 
         //this.chord = ko.observable('C G Am Em F C F G');
         this.chord = ko.observable(
@@ -166,7 +181,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
         this.recycle = function () { model.recycle(); };
         this.stop = function() { model.stop(); };
 
-        model.build();
+        model.build(this.synth());
         this.volume.subscribe(model.parameter.gain.gain);
         this.freqscale.subscribe(model.parameter.mono.bqf.freqScale);
         this.Q.subscribe(model.parameter.mono.bqf.Q);

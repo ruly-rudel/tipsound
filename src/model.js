@@ -3,11 +3,15 @@ define(['tipsound'], function (ts) {	// model
     var that = {};
     that.ts = ts;
 
-    var asynth = null;
-    var kick = null;
-    var seq = null;
+    var local = {
+        asynth: null,
+        kick: null,
+        seq: null
+    };
 
-    that.build = function () {
+    that.build = function (code) {
+        (new Function("ts", "local", "that", code))(ts, local, that);
+        /*
         asynth = ts.ModPoly(ts.ModAsynth);
 
         asynth.parameter.mono.env.attack = 0.0;
@@ -32,6 +36,7 @@ define(['tipsound'], function (ts) {	// model
             channel[i] = Math.sin(x * (Math.exp(-i / ts.ctx.sampleRate * y))) * Math.exp(-i / ts.ctx.sampleRate * z);
         }
         kick.connect(ts.ctx.destination);
+        */
     };
 
     that.play = function (abc) {
@@ -40,7 +45,7 @@ define(['tipsound'], function (ts) {	// model
         for (var i = 0; i < seq.length; i++) {
             switch (seq[i].inst) {
                 case "noteOn":
-                    an[seq[i].note] = asynth.start(ts.ctx.currentTime + seq[i].time, seq[i].note);
+                    an[seq[i].note] = local.asynth.start(ts.ctx.currentTime + seq[i].time, seq[i].note);
                     break;
                 case "noteOff":
                     an[seq[i].note].stop(ts.ctx.currentTime + seq[i].time);
@@ -54,9 +59,9 @@ define(['tipsound'], function (ts) {	// model
 
     that.playChord = function (c, c2s, voice, br) {
         var ca = c.split(/[\s|]/).filter(function (s) { return s != ""; });
-        seq.sequence = c2s(ca, voice, br);
+        local.seq.sequence = c2s(ca, voice, br);
         var t = ts.ctx.currentTime;
-        seq.invoke(t);
+        local.seq.invoke(t);
         /*
         var max = Math.max.apply(null, seq.sequence.map(function(x) { return x.time; }));
         for(var i = 0; i < max; i += 0.0015) {
@@ -85,11 +90,11 @@ define(['tipsound'], function (ts) {	// model
     
 
     that.recycle = function () {
-        asynth.recycle(ts.ctx.currentTime);
+        local.asynth.recycle(ts.ctx.currentTime);
     };
     
     that.stop = function() {
-        seq.post({ inst: "stop" });
+        local.seq.post({ inst: "stop" });
     };
 
     return that;
