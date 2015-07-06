@@ -3,9 +3,9 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
     "use strict";
 
     return function () { // ViewModel constructor
-        var breakMethod = {};
+        this.breakMethodFn = {};
 
-        breakMethod.breakDown3 = function (s) {
+        this.breakMethodFn.breakDown3 = function (s) {
             if (s[3] !== null) {
                 return [
                     { time: 0, inst: "noteOn", note: s[0] },
@@ -31,7 +31,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             }
         };
 
-        breakMethod.breakUp3 = function (s) {
+        this.breakMethodFn.breakUp3 = function (s) {
             if (s[3] !== null) {
                 return [
                     { time: 0, inst: "noteOn", note: s[0] },
@@ -57,7 +57,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             }
         };
 
-        breakMethod.breakUp4 = function (s) {
+        this.breakMethodFn.breakUp4 = function (s) {
             if (s[3] !== null) {
                 return [
                     { time: 0, inst: "noteOn", note: s[0] },
@@ -86,7 +86,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
         };
 
 
-        breakMethod.breakRootToChord = function (s) {
+        this.breakMethodFn.breakRootToChord = function (s) {
             if (s[3] !== null) {
                 return [
                     { time: 0, inst: "noteOn", note: s[0] },
@@ -115,7 +115,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             }
         };
 
-        breakMethod.NoBreak = function (s) {
+        this.breakMethodFn.NoBreak = function (s) {
             if (s[3] !== null) {
                 return [
                     { time: 0, inst: "noteOn", note: s[0] },
@@ -148,6 +148,8 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "local.asynth.parameter.mono.env.decay = 0.4;\n" +
             "local.asynth.parameter.mono.env.sustain = 0.0;\n" +
             "local.asynth.parameter.mono.env.release = 0.0;\n\n" +
+            "local.asynth.parameter.mono.bqf.freqScale = 1.6;\n" +
+            "local.asynth.parameter.mono.bqf.Q = 0.0001;\n\n" +
     
             "local.asynth.connect(ts.ctx.destination);\n" +
             "that.parameter = local.asynth.parameter;\n\n" +
@@ -155,6 +157,14 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "local.seq = ts.ModPolySeq();\n" +
             "local.seq.connect(local.asynth);\n"
         );
+        
+        this.sequence = ko.observable(
+            "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
+            "local.seq.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n" +
+            "var t = ts.ctx.currentTime;\n" +
+            "local.seq.invoke(t);\n"
+        );
+        
 
         //this.chord = ko.observable('C G Am Em F C F G');
         this.chord = ko.observable(
@@ -165,29 +175,18 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             );
 
         this.volume = ko.observable();
-        this.freqscale = ko.observable();
-        this.Q = ko.observable();
-        this.breakMethod = ko.observable(Object.keys(breakMethod)[0]);
-        this.breakMethodKind = Object.keys(breakMethod);
+        this.breakMethod = ko.observable(Object.keys(this.breakMethodFn)[0]);
+        this.breakMethodKind = Object.keys(this.breakMethodFn);
 
         this.playChord = function () {
-            model.playChord(
-                this.chord(),
-                model.ts.chordToSequenceBroken,
-                model.ts.simpleVoicing,
-                breakMethod[this.breakMethod()]
-                );
+            model.build(this.synth());
+            this.volume.subscribe(model.parameter.gain.gain);
+        
+            model.play(this.sequence(), this);
         };
         this.recycle = function () { model.recycle(); };
         this.stop = function() { model.stop(); };
 
-        model.build(this.synth());
-        this.volume.subscribe(model.parameter.gain.gain);
-        this.freqscale.subscribe(model.parameter.mono.bqf.freqScale);
-        this.Q.subscribe(model.parameter.mono.bqf.Q);
-
         this.volume(0.5);
-        this.freqscale(1.6);
-        this.Q(0.0001);
     };
 });

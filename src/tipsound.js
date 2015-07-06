@@ -345,14 +345,13 @@ define(['util'], function (util) {
 
         that.input = ts.ctx.createOscillator();
         that.parameter = {
-            type: util.Observable("sawtooth")
+            type: "sawtooth"
         };
-        subscriber.push(that.parameter.type.subscribe(function (v) { that.input.type = v; }));
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t, note) {
             that.dispose();     // hmm... is good or not???
-            that.input.type = that.parameter.type();
+            that.input.type = that.parameter.type;
             that.input.frequency.setValueAtTime(ts.noteToFreq(note), t);
             that.input.start(t);
 
@@ -423,25 +422,15 @@ define(['util'], function (util) {
 
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
-            frequency: util.Observable(880),
-            Q: util.Observable(0.0001)
+            frequency: 880,
+            Q: 0.0001
         };
-        /*
-        that.parameter.frequency.subscribe(function (v) { that.input.frequency.value = v; });
-        that.parameter.Q.subscribe(function (v) { that.input.Q.value = v; });
-        */
-
-
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
-            /*
-            subscriber.push(that.parameter.frequency.subscribe(function (v) { that.input.frequency.setValueAtTime(v, t); }));
-            subscriber.push(that.parameter.Q.subscribe(function (v) { that.input.Q.setValueAtTime(v, t); }));
-            */
 
-            that.input.frequency.setValueAtTime(that.parameter.frequency(), t);
-            that.input.Q.setValueAtTime(that.parameter.Q(), t);
+            that.input.frequency.setValueAtTime(that.parameter.frequency, t);
+            that.input.Q.setValueAtTime(that.parameter.Q, t);
             return that;
         };
 
@@ -467,7 +456,7 @@ define(['util'], function (util) {
             bqf: bqf.parameter,
             env: env.parameter
         };
-        that.parameter.bqf.freqScale = util.Observable(2);
+        that.parameter.bqf.freqScale = 2;
 
         bqf.connect(env.input);
         osc.connect(bqf.input);
@@ -480,8 +469,7 @@ define(['util'], function (util) {
             env.parameter = that.parameter.env;
 
             var frequency = ts.noteToFreq(note);
-            bqf.parameter.frequency(frequency * that.parameter.bqf.freqScale());
-            subscriber.push(that.parameter.bqf.freqScale.subscribe(function (v) { bqf.parameter.frequency(frequency * v); }));
+            bqf.parameter.frequency = frequency * that.parameter.bqf.freqScale;
 
             osc.start(t, note);
             bqf.start(t);

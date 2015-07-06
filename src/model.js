@@ -39,7 +39,9 @@ define(['tipsound'], function (ts) {	// model
         */
     };
 
-    that.play = function (abc) {
+    that.play = function (code, vm) {
+        (new Function("ts", "local", "vm", code))(ts, local, vm);
+        /*
         var seq = ts.abcToSequence(abc);
         var an = {};
         for (var i = 0; i < seq.length; i++) {
@@ -55,6 +57,7 @@ define(['tipsound'], function (ts) {	// model
                     throw new Error();
             }
         }
+        */
     };
 
     that.playChord = function (c, c2s, voice, br) {
