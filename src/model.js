@@ -5,16 +5,8 @@ define(['tipsound'], function (ts) {	// model
     
     var fg = ts.FilterGraph();
 
-/*
-    var local = {
-        asynth: null,
-        kick: null,
-        seq: null
-    };
-    */
-
-    that.build = function (code) {
-        (new Function("ts", "fg", "that", code))(ts, fg, that);
+    that.build = function (code, vm) {
+        (new Function("ts", "fg", "that", "vm", code))(ts, fg, that, vm);
         /*
         asynth = ts.ModPoly(ts.ModAsynth);
 
@@ -43,8 +35,8 @@ define(['tipsound'], function (ts) {	// model
         */
     };
 
-    that.play = function (code, vm) {
-        (new Function("ts", "fg", "vm", code))(ts, fg, vm);
+    that.play = function () {
+        fg.invoke(ts.ctx.currentTime);
         /*
         var seq = ts.abcToSequence(abc);
         var an = {};

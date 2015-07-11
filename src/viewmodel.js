@@ -155,17 +155,11 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "that.parameter = fg.module.asynth.parameter;\n\n" +
             
             "fg.register(\"seq\", ts.ModPolySeq());\n" +
-            "fg.connect(\"seq\", \"asynth\");\n"
-        );
-        
-        this.sequence = ko.observable(
+            "fg.connect(\"seq\", \"asynth\");\n\n" +
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
-            "fg.module.seq.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n" +
-            "var t = ts.ctx.currentTime;\n" +
-            "fg.invoke(t);\n"
+            "fg.module.seq.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n"
         );
         
-
         //this.chord = ko.observable('C G Am Em F C F G');
         this.chord = ko.observable(
             'A B G#m C#m A B C#7sus4 C#7\n' +
@@ -179,10 +173,10 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
         this.breakMethodKind = Object.keys(this.breakMethodFn);
 
         this.playChord = function () {
-            model.build(this.synth());
+            model.build(this.synth(), this);
             this.volume.subscribe(model.parameter.gain.gain);
         
-            model.play(this.sequence(), this);
+            model.play();
         };
         this.recycle = function () { model.recycle(); };
         this.stop = function() { model.stop(); };
