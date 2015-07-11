@@ -162,7 +162,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
             "fg.module.seq.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n" +
             "var t = ts.ctx.currentTime;\n" +
-            "fg.module.seq.invoke(t);\n"
+            "fg.invoke(t);\n"
         );
         
 

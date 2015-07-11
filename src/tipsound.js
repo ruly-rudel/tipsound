@@ -552,49 +552,15 @@ define(['util'], function (util) {
         var begin = 0;
         var seq = null;
         var an = {};
-        var cmd = [];
-        var isrun = false;
         
         that.connect = function(dist) { modPoly = dist; };
         
-        that.invoke = function(t) {
-            if(!isrun) {
-                begin = t;
-                seq = [].concat(that.sequence);
-                isrun = true;
-                enque(ts.ctx.currentTime);                
-            }
+        that.init = function(t) {
+            begin = t;
+            seq = [].concat(that.sequence);
         };
         
-        that.post = function(x) {
-            cmd.push(x);
-            if(!isrun) {
-                dispatch();
-            }
-        };
-        
-        var dispatch = function() {
-            // cmd
-            while(cmd.length > 0) {
-                var c = cmd.shift();
-                switch(c.inst) {
-                    case 'stop':
-                        isrun = false;
-                        return;
-                    default:
-                        break;                        
-                }
-            }            
-        };
-        
-        var enque = function() {
-            var t = ts.ctx.currentTime;
-            modPoly.recycle(t);
-            
-            dispatch();
-            if(!isrun) return ;
-            
-            // enque
+        that.enque = function(t) {
             while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
                 console.log("time: " + t);
                 switch (seq[0].inst) {
@@ -611,12 +577,9 @@ define(['util'], function (util) {
                 }
                 seq.shift();
             }
-            if(seq.length > 0) {
-                setTimeout(enque, 10);
-            } else {
-                isrun = false;
-            }            
         };
+        
+        that.rest = function() { return seq.length; };
         
         return that;
     };
@@ -662,6 +625,54 @@ define(['util'], function (util) {
         
         fg.release = function (){
             fg.module = {};
+        };
+
+        fg.delta = 0.1;
+        
+        var cmd = [];
+        var isrun = false;
+        
+        fg.invoke = function(t) {
+            if(!isrun) {
+                fg.module.seq.init(t);
+                isrun = true;
+                enque(ts.ctx.currentTime);                
+            }
+        };
+        
+        fg.post = function(x) {
+            cmd.push(x);
+            if(!isrun) {
+                dispatch();
+            }
+        };
+        
+        var dispatch = function() {
+            while(cmd.length > 0) {
+                var c = cmd.shift();
+                switch(c.inst) {
+                    case 'stop':
+                        isrun = false;
+                        return;
+                    default:
+                        break;                        
+                }
+            }            
+        };
+        
+        var enque = function() {
+            var t = ts.ctx.currentTime;
+            fg.module.asynth.recycle(t);
+            
+            dispatch();
+            if(!isrun) return ;
+            
+            fg.module.seq.enque(t);
+            if(fg.module.seq.rest() > 0) {
+                setTimeout(enque, 10);
+            } else {
+                isrun = false;
+            }            
         };
         
         return fg;
