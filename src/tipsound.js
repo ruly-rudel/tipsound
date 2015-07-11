@@ -318,25 +318,6 @@ define(['util'], function (util) {
         return seq;
     };
     
-    ts.abcToSequence = function () {
-        var meter = {
-            num: 4,
-            dino: 4
-        };
-        var length = 1/8;
-        var tempo = 100;
-        var key = "C";
-        
-        return function(abc) {
-            
-        };
-    }();
-
-    ts.tabToSequence = function (tabs) {
-        var t = util.map.call(tabs, ts.parseTab);
-
-    };
-
     //
     // AudioNode Modules
     ts.ModOsc = function () {
@@ -547,6 +528,7 @@ define(['util'], function (util) {
         var that = {};
         that.sequence = null;
         that.delta = 0.1;
+        that.isSequencer = true;
         
         var modPoly = null;
         var begin = 0;
@@ -662,17 +644,28 @@ define(['util'], function (util) {
         
         var enque = function() {
             var t = ts.ctx.currentTime;
-            fg.module.asynth.recycle(t);
+            
+            var v;
+            for(v in fg.module) {
+                if(fg.module[v]["recycle"] !== undefined) fg.module[v].recycle(t);
+            }
             
             dispatch();
             if(!isrun) return ;
+
+            for(v in fg.module) {
+                if(fg.module[v]["enque"] !== undefined) fg.module[v].enque(t);
+            }
             
-            fg.module.seq.enque(t);
-            if(fg.module.seq.rest() > 0) {
+            var r = util.reduce.call(
+                        util.hmap(function(v) { return v["rest"] !== undefined ? v.rest() > 0 : false; }, fg.module),
+                        function(p, c) { return p || c; }
+                    );
+            if(r) {
                 setTimeout(enque, 10);
             } else {
                 isrun = false;
-            }            
+            }
         };
         
         return fg;

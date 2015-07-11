@@ -5,6 +5,7 @@ define(function () {
     var that = {};
 
     that.map = Array.prototype.map;
+    that.reduce = Array.prototype.reduce;
 
     that.mapcar = function (fn, lists) // ad-hock: assume all list lengths are the same. maybe fixed after.
     {
@@ -17,6 +18,30 @@ define(function () {
             r.push(fn.apply(null, tr));
         }
 
+        return r;
+    };
+    
+    that.hreduce = function (fn, list)
+    {
+        var sum = undefined;
+        for(var key in list) {
+            if(sum === undefined) {
+                sum = list[key];
+            } else {
+                sum = fn(sum, list[key]);
+            }
+        }
+        
+        return sum;
+    };
+    
+    that.hmap = function (fn, list)
+    {
+        var r = [];
+        for(var key in list) {
+            r.push(fn(list[key], key));
+        }
+        
         return r;
     };
 
