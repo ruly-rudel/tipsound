@@ -142,8 +142,12 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
         };
         
         this.synth = ko.observable(
-            "fg.register(\"asynth\", ts.ModPoly(ts.ModAsynth));\n\n" +
+            "fg.register(\"asynth\", ts.ModPoly(ts.ModAsynth));\n" +
+            "fg.register(\"seq\", ts.ModPolySeq());\n\n" +
     
+            "fg.connect(\"seq\", \"asynth\");\n" +
+            "fg.connect(\"asynth\", \"distination\");\n\n" +
+            
             "fg.module.asynth.parameter.mono.env.attack = 0.0;\n" +
             "fg.module.asynth.parameter.mono.env.decay = 0.4;\n" +
             "fg.module.asynth.parameter.mono.env.sustain = 0.0;\n" +
@@ -151,13 +155,8 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "fg.module.asynth.parameter.mono.bqf.freqScale = 1.6;\n" +
             "fg.module.asynth.parameter.mono.bqf.Q = 0.0001;\n\n" +
     
-            "fg.connect(\"asynth\", \"distination\");\n" +
-            "that.parameter = fg.module.asynth.parameter;\n\n" +
-            
-            "fg.register(\"seq\", ts.ModPolySeq());\n" +
-            "fg.connect(\"seq\", \"asynth\");\n\n" +
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
-            "fg.module.seq.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n"
+            "fg.module.seq.parameter.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n\n"
         );
         
         //this.chord = ko.observable('C G Am Em F C F G');
@@ -174,7 +173,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
 
         this.playChord = function () {
             model.build(this.synth(), this);
-            this.volume.subscribe(model.parameter.gain.gain);
+            this.volume.subscribe(model.parameter.asynth.gain.gain);
         
             model.play();
         };

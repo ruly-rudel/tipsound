@@ -6,7 +6,11 @@ define(['tipsound'], function (ts) {	// model
     var fg = ts.FilterGraph();
 
     that.build = function (code, vm) {
-        (new Function("ts", "fg", "that", "vm", code))(ts, fg, that, vm);
+        (new Function("ts", "fg", "vm", code))(ts, fg, vm);
+        that.parameter = {};
+        for(var key in fg.module) {
+            that.parameter[key] = fg.module[key].parameter;
+        }
         /*
         asynth = ts.ModPoly(ts.ModAsynth);
 
@@ -88,10 +92,6 @@ define(['tipsound'], function (ts) {	// model
     };
     
 
-    that.recycle = function () {
-        fg.module.asynth.recycle(ts.ctx.currentTime);
-    };
-    
     that.stop = function() {
         fg.post({ inst: "stop" });
     };

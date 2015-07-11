@@ -526,9 +526,10 @@ define(['util'], function (util) {
     
     ts.ModPolySeq = function() {
         var that = {};
-        that.sequence = null;
-        that.delta = 0.1;
-        that.isSequencer = true;
+        that.parameter = {
+            sequence: null,
+            delta: 0.1
+        };
         
         var modPoly = null;
         var begin = 0;
@@ -539,11 +540,11 @@ define(['util'], function (util) {
         
         that.init = function(t) {
             begin = t;
-            seq = [].concat(that.sequence);
+            seq = [].concat(that.parameter.sequence);
         };
         
         that.enque = function(t) {
-            while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.delta) {
+            while(seq !== null && seq.length > 0 && (seq[0].time + begin) < t + that.parameter.delta) {
                 console.log("time: " + t);
                 switch (seq[0].inst) {
                     case "noteOn":
