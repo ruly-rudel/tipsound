@@ -2,15 +2,19 @@ define(['tipsound'], function (ts) {	// model
     "use strict";
     var that = {};
     that.ts = ts;
+    
+    var fg = ts.FilterGraph();
 
+/*
     var local = {
         asynth: null,
         kick: null,
         seq: null
     };
+    */
 
     that.build = function (code) {
-        (new Function("ts", "local", "that", code))(ts, local, that);
+        (new Function("ts", "fg", "that", code))(ts, fg, that);
         /*
         asynth = ts.ModPoly(ts.ModAsynth);
 
@@ -40,7 +44,7 @@ define(['tipsound'], function (ts) {	// model
     };
 
     that.play = function (code, vm) {
-        (new Function("ts", "local", "vm", code))(ts, local, vm);
+        (new Function("ts", "fg", "vm", code))(ts, fg, vm);
         /*
         var seq = ts.abcToSequence(abc);
         var an = {};
@@ -62,9 +66,9 @@ define(['tipsound'], function (ts) {	// model
 
     that.playChord = function (c, c2s, voice, br) {
         var ca = c.split(/[\s|]/).filter(function (s) { return s != ""; });
-        local.seq.sequence = c2s(ca, voice, br);
+        fg.module.seq.sequence = c2s(ca, voice, br);
         var t = ts.ctx.currentTime;
-        local.seq.invoke(t);
+        fg.module.seq.invoke(t);
         /*
         var max = Math.max.apply(null, seq.sequence.map(function(x) { return x.time; }));
         for(var i = 0; i < max; i += 0.0015) {
@@ -93,11 +97,11 @@ define(['tipsound'], function (ts) {	// model
     
 
     that.recycle = function () {
-        local.asynth.recycle(ts.ctx.currentTime);
+        fg.module.asynth.recycle(ts.ctx.currentTime);
     };
     
     that.stop = function() {
-        local.seq.post({ inst: "stop" });
+        fg.module.seq.post({ inst: "stop" });
     };
 
     return that;

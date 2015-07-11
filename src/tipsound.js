@@ -643,6 +643,29 @@ define(['util'], function (util) {
             subscriber = [];
         };
     };
+    
+    ts.FilterGraph = function() {
+        var fg = {};
+        fg.module = {};
+        
+        fg.register = function(name, mod) {
+            fg.module[name] = mod;
+        };
+        
+        fg.connect = function(src, dst) {
+            if(dst == "distination") {
+                fg.module[src].connect(ts.ctx.destination);
+            } else {
+                fg.module[src].connect(fg.module[dst]);
+            }
+        };
+        
+        fg.release = function (){
+            fg.module = {};
+        };
+        
+        return fg;
+    };
 
 
 
