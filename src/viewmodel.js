@@ -146,7 +146,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "fg.register(\"seq\", ts.ModPolySeq());\n\n" +
     
             "fg.connect(\"seq\", \"asynth\");\n" +
-            "fg.connect(\"asynth\", \"distination\");\n\n" +
+            "fg.connect(\"asynth\", \"destination\");\n\n" +
             
             "fg.module.asynth.parameter.mono.env.attack = 0.0;\n" +
             "fg.module.asynth.parameter.mono.env.decay = 0.4;\n" +

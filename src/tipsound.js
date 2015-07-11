@@ -599,7 +599,7 @@ define(['util'], function (util) {
         };
         
         fg.connect = function(src, dst) {
-            if(dst == "distination") {
+            if(dst == "destination") {
                 fg.module[src].connect(ts.ctx.destination);
             } else {
                 fg.module[src].connect(fg.module[dst]);
@@ -617,7 +617,12 @@ define(['util'], function (util) {
         
         fg.invoke = function(t) {
             if(!isrun) {
-                fg.module.seq.init(t);
+                for(var v in fg.module) {
+                    if(fg.module[v]["init"] !== undefined) {
+                        fg.module[v].parameter.delta = fg.delta;
+                        fg.module[v].init(t);
+                    }
+                }
                 isrun = true;
                 enque(ts.ctx.currentTime);                
             }
