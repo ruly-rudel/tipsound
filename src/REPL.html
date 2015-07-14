@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script type='text/javascript' data-main="repl.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.17/require.min.js"></script>
+    <title>tipsound.js REPL</title>
+</head>
+<body>
+    <h1>tipsound.js repl</h1>
+    <!--
+    <ul data-bind="foreach: Object.keys(breakMethodKind())">
+        <li><span data-bind="text: $data"></span>: <span data-bind="text: $parent.breakMethodKind()[$data]"></span></li>
+    </ul>
+    -->
+    <h2>input</h2>
+        <textarea type="text" id="code" rows="5" cols="80" data-bind="value: code" spellcheck="false"></textarea>
+		<br />
+        <input type="button" id="exec" value="exec" data-bind="click: exec"/>
+    <h2>result</h2>
+        <textarea type="text" id="result" rows="20" cols="80" data-bind="value: result" spellcheck="false"></textarea>
+</body>
+</html>
