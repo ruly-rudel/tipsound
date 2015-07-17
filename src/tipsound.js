@@ -227,6 +227,109 @@ define(['util'], function (util) {
         return { "root": root, "onchord": onchord, offset: ["perfect1", third, fifth, seventh] };
     };
 
+    ts.parseVoicing = function (voice) {
+        var st = 0; // state
+        var pos = 0;
+
+        var result = {
+            notes: [],
+            length: {       // default 1/8
+                nume: 1,
+                deno: 8
+            }
+        };
+
+        while (pos < voice.length) {
+            switch (st) {
+                case 0:     // skip space
+                    if(voice[pos] != " " && voice[pos] != "\t") {
+                        st = 1;
+                    } else {
+                        pos++;
+                    }
+                    break;
+
+                case 1:   // single or multiple voice
+                    if (voice[pos] == "[") {    // multiple voice                        
+                        st = 3;
+                        pos++;   // skip [
+                    } else {                    // single voice
+                        st = 2;
+                    }
+                    break;
+
+                case 2: // single voice
+                    switch(voice[pos++]) {
+                        case 'R':   // root
+                            result.notes.push(0);
+                            break;
+                            
+                        case 'T':   // third
+                            result.notes.push(1);
+                            break;
+                            
+                        case 'F':   // fifth
+                            result.notes.push(2);
+                            break;
+                            
+                        case 'S':   // seventh
+                            result.notes.push(3);
+                            break;
+                            
+                        case 'z':   // rest
+                            result.notes.push(-1);
+                            break;
+                            
+                        default:
+                            throw new Error("parse error.");
+                    }
+                    st = 4;
+                    break;
+                    
+                case 3: // multiple voicing 1: check single
+                    switch(voice[pos++]) {
+                        case 'R':   // root
+                            result.notes.push(0);
+                            break;
+                            
+                        case 'T':   // third
+                            result.notes.push(1);
+                            break;
+                            
+                        case 'F':   // fifth
+                            result.notes.push(2);
+                            break;
+                            
+                        case 'S':   // seventh
+                            result.notes.push(3);
+                            break;
+                            
+                        case 'z':   // rest
+                            result.notes.push(-1);
+                            break;
+                            
+                        case ']':   // end of voice
+                            st = 4;
+                            break;
+                            
+                        default:
+                            throw new Error("parse error.");
+                    }
+                    break;
+                    
+                case 4: // length
+                    throw new Error("not implemented yet.");                
+                    
+                default:
+                    throw new Error("parser internal error.");
+            }
+        }
+
+        return result;
+    };
+
+
+
     ts.tabDegree = [18, 23, 28, 33, 37, 42];
 
     ts.parseTab = function (tab) {
