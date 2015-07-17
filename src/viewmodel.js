@@ -19,9 +19,7 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
     
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
             "var va = vm.breakValue().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
-            "fg.module.seq.parameter.sequence = ts.voiceToSequence(ca, va, 120);\n\n"
-            
-//            "fg.module.seq.parameter.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n\n"
+            "fg.module.seq.parameter.sequence = ts.chordToSequence(ca, va, vm.tempo());\n\n"            
         );
         
         //this.chord = ko.observable('C G Am Em F C F G');
@@ -34,10 +32,12 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             
         this.breakValue = ko.observable();
         this.breakKind = ko.observable([
-            "[RS] z F z T z",
-            "[RS] z T z F z",
-            "R z z [RTFS] z z",
+            "[RS]8/3 F8/3 T8/3",
+            "[RS]8/3 T8/3 F8/3",
+            "R4 [RTFS]4",
         ]);
+        
+        this.tempo = ko.observable(180);
 
         this.volume = ko.observable();
 

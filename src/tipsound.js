@@ -235,7 +235,7 @@ define(['util'], function (util) {
             notes: [],
             length: {       // default 1/8
                 nume: 1,
-                deno: 8
+                deno: 1
             }
         };
 
@@ -316,15 +316,36 @@ define(['util'], function (util) {
                             throw new Error("parse error.");
                     }
                     break;
+                
+                case 4: // length :initialize
+                    result.length.nume = 0;
+                    st = 5;
+                    break;                    
                     
-                case 4: // length
-                    throw new Error("not implemented yet.");                
+                case 5: // length :nume
+                    if(voice[pos] == "/") {
+                        st = 6;
+                    } else {
+                        result.length.nume = result.length.nume * 10 + Number(voice[pos]);
+                    }
+                    pos++;
+                    break;
+                
+                case 6: // length :initialize
+                    result.length.deno = 0;
+                    st = 7;
+                    break;                    
+                
+                case 7: // length :deno
+                    result.length.deno = result.length.deno * 10 + Number(voice[pos++]);
+                    break;
                     
                 default:
                     throw new Error("parser internal error.");
             }
         }
 
+        result.length.deno *= 8;    // default 1/8
         return result;
     };
 
@@ -359,7 +380,7 @@ define(['util'], function (util) {
         return voice;
     };
     
-    var voiceToSequence1 = function(chord, voice, offset, meter) {
+    var chordToSequence1 = function(chord, voice, offset, meter) {
         var notelen = 240 * voice.length.nume / (voice.length.deno * meter);
         var seq = [];
         voice.notes.map(function(n) { if(n >= 0 && chord[n] !== null) seq.push({ time: offset, inst: "noteOn",  note: chord[n]}); });
@@ -367,7 +388,7 @@ define(['util'], function (util) {
         return { sequence: seq, length: notelen};
     }
 
-    ts.voiceToSequence = function(chords, voices, meter)
+    ts.chordToSequence = function(chords, voices, meter)
     {
         var c = util.map.call(chords, util.compose(ts.simpleVoicing, ts.parseChord));
         var v = util.map.call(voices, ts.parseVoicing);
@@ -376,7 +397,7 @@ define(['util'], function (util) {
         var t = 0;
         for (var j = 0; j < c.length; j++) {
             for(var i = 0; i < v.length; i++) {
-                var s = voiceToSequence1(c[j], v[i], t, meter);
+                var s = chordToSequence1(c[j], v[i], t, meter);
                 t += s.length;
                 seq = seq.concat(s.sequence);
             }
