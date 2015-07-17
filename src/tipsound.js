@@ -358,7 +358,33 @@ define(['util'], function (util) {
 
         return voice;
     };
+    
+    var voiceToSequence1 = function(chord, voice, offset, meter) {
+        var notelen = 240 * voice.length.nume / (voice.length.deno * meter);
+        var seq = [];
+        voice.notes.map(function(n) { if(n >= 0 && chord[n] !== null) seq.push({ time: offset, inst: "noteOn",  note: chord[n]}); });
+        voice.notes.map(function(n) { if(n >= 0 && chord[n] !== null) seq.push({ time: offset + notelen, inst: "noteOff",  note: chord[n]}); });
+        return { sequence: seq, length: notelen};
+    }
 
+    ts.voiceToSequence = function(chords, voices, meter)
+    {
+        var c = util.map.call(chords, util.compose(ts.simpleVoicing, ts.parseChord));
+        var v = util.map.call(voices, ts.parseVoicing);
+
+        var seq = [];
+        var t = 0;
+        for (var j = 0; j < c.length; j++) {
+            for(var i = 0; i < v.length; i++) {
+                var s = voiceToSequence1(c[j], v[i], t, meter);
+                t += s.length;
+                seq = seq.concat(s.sequence);
+            }
+        }
+
+//        seq.sort(function (a, b) { return a.time - b.time; });
+        return seq;
+    }
     /*
     ts.closedVoicing = function (chord) {
         var root = ts.chordDegree[chord.root];

@@ -156,7 +156,10 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             "fg.module.asynth.parameter.mono.bqf.Q = 0.0001;\n\n" +
     
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
-            "fg.module.seq.parameter.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n\n"
+            "var va = vm.breakValue().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
+            "fg.module.seq.parameter.sequence = ts.voiceToSequence(ca, va, 120);\n\n"
+            
+//            "fg.module.seq.parameter.sequence = ts.chordToSequenceBroken(ca, ts.simpleVoicing, vm.breakMethodFn[vm.breakMethod()]);\n\n"
         );
         
         //this.chord = ko.observable('C G Am Em F C F G');
@@ -166,6 +169,13 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
             'A B G# C#m F# F# B Cm6(-5)\n' +
             'C#m C(+5) E/B A#m7(-5) A A A/B B\n'
             );
+            
+        this.breakValue = ko.observable();
+        this.breakKind = ko.observable([
+            "[RS] z F z T z",
+            "[RS] z T z F z",
+            "R z z [RTFS] z z",
+        ]);
 
         this.volume = ko.observable();
         this.breakMethod = ko.observable(Object.keys(this.breakMethodFn)[0]);

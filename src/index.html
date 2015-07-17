@@ -20,7 +20,8 @@
         <span data-bind="text: volume"></span>
         <input type="range" id="volume" min="0.0" max="1.0" step="0.01" data-bind="value: volume" />
     <h3>break method</h3>
-        <select data-bind="options: breakMethodKind, value: breakMethod, valueAllowUnset: true" size="5" multiple="false"></select>
+        <select data-bind="options: breakKind, value: breakValue, valueAllowUnset: false" size="1">
+        </select>
     <h2>sound code</h2>
     <h3>notes</h3>
         <textarea type="text" id="chord" rows="5" cols="80" data-bind="value: chord" spellcheck="false"></textarea>
