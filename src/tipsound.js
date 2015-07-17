@@ -385,22 +385,6 @@ define(['util'], function (util) {
 //        seq.sort(function (a, b) { return a.time - b.time; });
         return seq;
     }
-    /*
-    ts.closedVoicing = function (chord) {
-        var root = ts.chordDegree[chord.root];
-        return chord.offset.map(function (x) {
-            if (x === undefined) {
-                return null;
-            } else {
-                var cd = ts.chordDegree[x].integer() + 33 - 12 + root;
-                if (cd > 35 - 12) {
-                    cd -= 12;
-                }
-                return cd;
-            }
-        });
-    };
-    */
 
     ts.chordToKick = function (chords) {
         var seq = [];
@@ -412,40 +396,6 @@ define(['util'], function (util) {
         return seq;
     };
 
-    ts.chordToSequence = function (chords, voicing) {
-        var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
-
-        var seq = [];
-        for (var j = 0; j < c.length; j++) {
-            for (var i = 0; i < c[j].length; i++) {
-                if (c[j][i] !== null) {
-                    seq.push({ time: j, inst: "noteOn", note: c[j][i] });
-                    seq.push({ time: j + 0.99, inst: "noteOff", note: c[j][i] });
-                }
-            }
-        }
-
-        seq.sort(function (a, b) { return a.time - b.time; });
-        return seq;
-    };
-
-    ts.chordToSequenceBroken = function (chords, voicing, br) {
-        var c = util.map.call(chords, util.compose(voicing, ts.parseChord));
-
-        var seq = [];
-        var t = 0;
-        for (var j = 0; j < c.length; j++) {
-            var bc = br(c[j]);
-            for (var i = 0; i < bc.length; i++) {
-                if (bc[i].inst != "dummy")
-                    seq.push({ time: t + bc[i].time, inst: bc[i].inst, note: bc[i].note });
-            }
-            t = t + bc[bc.length - 1].time;
-        }
-
-        seq.sort(function (a, b) { return a.time - b.time; });
-        return seq;
-    };
     
     //
     // AudioNode Modules
