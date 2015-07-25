@@ -6,9 +6,10 @@ require(['knockout-3.3.0', 'tipsound', 'util', 'domReady!'], function (ko, ts, u
 				"_.XB('http://gauzau.s30.xrea.com/A320U.sf2', function(r) {\n" +
 				"    var ar = util.ArrayReader(r);\n" +
 				"    var sf2 = util.SF2(ar);\n" +
-				"    sf2.parse();\n" +
-				"    console.log(JSON.stringify(sf2.riffHeader, null, 4));\n" +
-				"    console.log(JSON.stringify(sf2.sfbk, null, 4));\n" +
+				"    sf2.parseHeader();\n" +
+//				"    console.log(JSON.stringify(sf2.riffHeader, null, 4));\n" +
+//				"    console.log(JSON.stringify(sf2.sfbk, null, 4));\n" +
+				"    console.log(JSON.stringify(sf2.readPreset(0), null, 4));\n" +
 				"});\n" +
 				"return 'finish';\n"
 				/*
