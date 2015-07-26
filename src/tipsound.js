@@ -578,6 +578,7 @@ define(['util'], function (util) {
             gain: gain.parameter,
             mono: m().parameter
         };
+        that.input = that;
 
         that.connect = function (dist) { gain.connect(dist); };
 
@@ -702,7 +703,7 @@ define(['util'], function (util) {
             if(dst == "destination") {
                 fg.module[src].connect(ts.ctx.destination);
             } else {
-                fg.module[src].connect(fg.module[dst]);
+                fg.module[src].connect(fg.module[dst].input);
             }
         };
         

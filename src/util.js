@@ -140,6 +140,8 @@ define(function () {
         
         that.position = function() { return pos; }
         
+        that.subarray = function(be, en) { return b.subarray(be, en); }
+        
         var readInt = function(n)
         {
             var result = 0;

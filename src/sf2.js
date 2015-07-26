@@ -180,6 +180,18 @@ define(['util'], function (util) {
             return p;
         };
         
+        that.readSDTA = function(pos) {
+            ar.seek(that.sfbk.sdta.child.smpl.headPosition + pos * 2);
+            return ar.readInt16() / 32768;
+        }
+        
+        that.readSDTAChunk = function(b, e) {
+            return new Int16Array(new Uint8Array(ar.subarray(
+                that.sfbk.sdta.child.smpl.headPosition + b * 2,
+                that.sfbk.sdta.child.smpl.headPosition + e * 2                
+            )).buffer);
+        }
+        
         var readPGEN1 = function(b, e) {
             var pgen = that.sfbk.pdta.child.pgen;
             var result = [];
