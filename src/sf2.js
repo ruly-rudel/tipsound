@@ -153,7 +153,9 @@ define(['util'], function (util) {
             var pbag = that.sfbk.pdta.child.pbag;
             
             var r = {
-                phdr: phdr.data[n]
+                presetName: phdr.data[n].presetName,
+                preset: phdr.data[n].preset,
+                bank: phdr.data[n].bank
             }
             
             // PBAGs
@@ -161,12 +163,7 @@ define(['util'], function (util) {
             for(var i = phdr.data[n].presetBagNdx; i < phdr.data[n + 1].presetBagNdx; i++) {
                 var pbag0 = parsePBAG1(ar, pbag, i);
                 var pbag1 = parsePBAG1(ar, pbag, i + 1);
-                r.pbag.push({
-                    "pbag": pbag0,
-                    "pgen": readPGEN1(pbag0.genNdx, pbag1.genNdx)
-                });
-                
-                r.pbag.push();
+                r.pbag.push(createHashGenFromPgenArray(readPGEN1(pbag0.genNdx, pbag1.genNdx)));
             }
             
             return r;
@@ -196,7 +193,7 @@ define(['util'], function (util) {
             var inst1 = parseINST1(ar, inst, i + 1);
             
             var r = {
-                "inst": inst0
+                "instName": inst0.instName
             };
             
             // IBAGs
@@ -205,13 +202,36 @@ define(['util'], function (util) {
                 var ibag0 = parseIBAG1(ar, ibag, i);
                 var ibag1 = parseIBAG1(ar, ibag, i + 1);
                 
-                r.ibag.push({
-                    "ibag": ibag0,
-                    "igen": readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)
-                });                
+                r.ibag.push(
+                    createHashGenFromIgenArray(
+                        readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)));                
             }
             
             return r;
+        }
+        
+        var createHashGenFromIgenArray = function(igens) {
+            var hash = {};
+            igens.forEach(function(igen) {
+                hash[igen.igen.inst] = igen.igen.genAmount;
+                if(igen.igen.inst == 'sampleID') {
+                    hash['shdr'] = igen.shdr;
+                }
+            });
+            
+            return hash;
+        }
+        
+        var createHashGenFromPgenArray = function(pgens) {
+            var hash = {};
+            pgens.forEach(function(pgen) {
+                hash[pgen.pgen.inst] = pgen.pgen.genAmount;
+                if(pgen.pgen.inst == 'instrument') {
+                    hash['instrument'] = pgen.inst;
+                }
+            });
+            
+            return hash;
         }
         
         var readIGEN1 = function(b, e) {
