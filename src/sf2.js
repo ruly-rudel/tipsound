@@ -159,28 +159,41 @@ define(['util'], function (util) {
             }
             
             // PBAGs
-            r.pbag = [];
+            r.pbag = {
+                pgen: [],
+                pmod: []
+            };
             for(var i = phdr.data[n].presetBagNdx; i < phdr.data[n + 1].presetBagNdx; i++) {
                 var pbag0 = parsePBAG1(ar, pbag, i);
                 var pbag1 = parsePBAG1(ar, pbag, i + 1);
-                r.pbag.push(createHashGenFromPgenArray(readPGEN1(pbag0.genNdx, pbag1.genNdx)));
+                r.pbag.pgen.push(createHashGenFromPgenArray(readPGEN1(pbag0.genNdx, pbag1.genNdx)));
             }
             
             return r;
         };
         
+        that.enumPresets = function() {
+            var p = [];
+            var phdr = that.sfbk.pdta.child.phdr;
+            phdr.data.forEach(function(ph) { p.push(ph.presetName); });
+            
+            return p;
+        };
+        
         var readPGEN1 = function(b, e) {
             var pgen = that.sfbk.pdta.child.pgen;
             var result = [];
-            for(var i = b; i < e; i++) {
-                var r = {
-                    "pgen": parsePGEN1(ar, pgen, i)
-                }
-                if(r.pgen.inst == "instrument") {
-                    r.inst = readINST1(r.pgen.genAmount);
-                }
-                
-                result.push(r);
+            if(b != e) {
+                for(var i = b; i < e; i++) {
+                    var r = {
+                        "pgen": parsePGEN1(ar, pgen, i)
+                    }
+                    if(r.pgen.inst == "instrument") {
+                        r.inst = readINST1(r.pgen.genAmount);
+                    }
+                    
+                    result.push(r);
+                }                
             }
             
             return result;
@@ -197,12 +210,15 @@ define(['util'], function (util) {
             };
             
             // IBAGs
-            r.ibag = [];
+            r.ibag = {
+                igen: [],
+                imod: []
+            };
             for(var i = inst0.instBagNdx; i < inst1.instBagNdx; i++) {
                 var ibag0 = parseIBAG1(ar, ibag, i);
                 var ibag1 = parseIBAG1(ar, ibag, i + 1);
                 
-                r.ibag.push(
+                r.ibag.igen.push(
                     createHashGenFromIgenArray(
                         readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)));                
             }
@@ -294,7 +310,7 @@ define(['util'], function (util) {
                 data.genAmount.lo = ar.readUInt8();
                 data.genAmount.hi = ar.readUInt8();                
             } else {
-                data.genAmount = ar.readUInt16();
+                data.genAmount = ar.readInt16();
             }
             
             root.data[i] = data;
@@ -340,7 +356,7 @@ define(['util'], function (util) {
                 data.genAmount.lo = ar.readUInt8();
                 data.genAmount.hi = ar.readUInt8();                
             } else {
-                data.genAmount = ar.readUInt16();
+                data.genAmount = ar.readInt16();
             }
             
             root.data.push(data);

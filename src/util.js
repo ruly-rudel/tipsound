@@ -113,6 +113,16 @@ define(function () {
             return readInt(1);
         }
         
+        that.readInt16 = function()
+        {
+            var i = readInt(2);
+            if(i > 32767) {
+                return i - 32768;
+            } else {
+                return i;
+            }
+        }
+        
         that.readUInt16 = function()
         {
             return readInt(2);
