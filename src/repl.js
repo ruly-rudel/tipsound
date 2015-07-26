@@ -1,11 +1,11 @@
-require(['knockout-3.3.0', 'tipsound', 'util', 'domReady!'], function (ko, ts, util) {
+require(['knockout-3.3.0', 'tipsound', 'util', 'sf2', 'domReady!'], function (ko, ts, util, SF2) {
 	// view model
 	var self = {
 			//code: ko.observable("return ts.parseChord('C');"),
 			code: ko.observable(
 				"_.XB('http://gauzau.s30.xrea.com/A320U.sf2', function(r) {\n" +
-				"    var ar = util.ArrayReader(r);\n" +
-				"    var sf2 = util.SF2(ar);\n" +
+//				"    var ar = util.ArrayReader(r);\n" +
+				"    var sf2 = SF2.createFromArrayBuffer(r);\n" +
 				"    sf2.parseHeader();\n" +
 //				"    console.log(JSON.stringify(sf2.riffHeader, null, 4));\n" +
 //				"    console.log(JSON.stringify(sf2.sfbk, null, 4));\n" +
@@ -32,7 +32,7 @@ require(['knockout-3.3.0', 'tipsound', 'util', 'domReady!'], function (ko, ts, u
 				*/
 			),
 			result: ko.observable(),
-			exec: function() { self.result(JSON.stringify((new Function("ts", "util", "self", self.code()))(ts, util, self), null, 4)); }
+			exec: function() { self.result(JSON.stringify((new Function("ts", "util", "SF2", "self", self.code()))(ts, util, SF2, self), null, 4)); }
 	};
 	
     ko.applyBindings(self);
