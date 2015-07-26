@@ -358,7 +358,7 @@ define(['util'], function (util) {
     };
 
     ts.noteToFreq = function (n) {
-        return Math.pow(2,(n - 33) / 12) * 440;
+        return Math.pow(2,(n - 69) / 12) * 440;
     };
 
     ts.simpleVoicing = function (chord) {
@@ -367,12 +367,12 @@ define(['util'], function (util) {
             if (x === undefined) {
                 return null;
             } else {
-                var cd = ts.chordDegree[x].integer() + 33 - 12 + root;
+                var cd = ts.chordDegree[x].integer() + 69 - 12 + root;
                 return cd;
             }
         });
         if (chord.onchord !== undefined) {
-            var on = ts.chordDegree[chord.onchord].integer() + 33 - 12;
+            var on = ts.chordDegree[chord.onchord].integer() + 69 - 12;
             if (on > root) { on -= 12; }
             voice.unshift(on);
         }
