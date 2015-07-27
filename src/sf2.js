@@ -142,9 +142,11 @@ define(['util'], function (util) {
             // set placeholder
             that.sfbk.pdta.child.pbag.data = [];
             that.sfbk.pdta.child.pgen.data = [];
+            that.sfbk.pdta.child.pmod.data = [];
             that.sfbk.pdta.child.inst.data = [];
             that.sfbk.pdta.child.ibag.data = [];
             that.sfbk.pdta.child.igen.data = [];
+            that.sfbk.pdta.child.imod.data = [];
             that.sfbk.pdta.child.shdr.data = [];
         };
         
@@ -167,6 +169,7 @@ define(['util'], function (util) {
                 var pbag0 = parsePBAG1(ar, pbag, i);
                 var pbag1 = parsePBAG1(ar, pbag, i + 1);
                 r.pbag.pgen.push(createHashGenFromPgenArray(readPGEN1(pbag0.genNdx, pbag1.genNdx)));
+                r.pbag.pmod.push(readPMOD1(pbag0.modNdx, pbag1.modNdx));
             }
             
             return r;
@@ -211,6 +214,18 @@ define(['util'], function (util) {
             return result;
         };
         
+        var readPMOD1 = function(b, e) {
+            var pmod = that.sfbk.pdta.child.pmod;
+            var result = [];
+            if(b != e) {
+                for(var i = b; i < e; i++) {
+                    result.push(parseMOD1(ar, pmod, i));
+                }                
+            }
+            
+            return result;
+        };
+        
         var readINST1 = function(i) {
             var inst = that.sfbk.pdta.child.inst;
             var ibag = that.sfbk.pdta.child.ibag;
@@ -232,7 +247,8 @@ define(['util'], function (util) {
                 
                 r.ibag.igen.push(
                     createHashGenFromIgenArray(
-                        readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)));                
+                        readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)));
+                r.ibag.imod.push(readIMOD1(ibag0.instModNdx, ibag1.instModNdx));
             }
             
             return r;
@@ -279,12 +295,25 @@ define(['util'], function (util) {
             return result;            
         };
         
+        var readIMOD1 = function(b, e) {
+            var imod = that.sfbk.pdta.child.imod;
+            var result = [];
+            if(b != e) {
+                for(var i = b; i < e; i++) {
+                    result.push(parseMOD1(ar, imod, i));
+                }                
+            }
+            
+            return result;
+        };
+                
         var readSHDR1 = function(i) {
             var shdr = that.sfbk.pdta.child.shdr;
             
             return parseSHDR1(ar, shdr, i);
         };
-                
+
+
         var parseHeader = function(){
             var h = {};
             h.ID = ar.readStringF(4);
@@ -324,6 +353,26 @@ define(['util'], function (util) {
             } else {
                 data.genAmount = ar.readInt16();
             }
+            
+            root.data[i] = data;
+                
+            return data;
+        };
+        
+        var parseMOD1 = function(ar, root, i) {
+            ar.seek(root.headPosition + i * 10);
+
+            var data = {};
+            data.modSrcOper = { };
+            data.modSrcOper.index = ar.readUInt8();
+            data.modSrcOper.type  = ar.readUInt8();
+            data.modDestOper = ar.readUInt16();
+            data.modDestInst = sfGenerator[data.modDestOper];
+            data.modAmount = ar.readInt16();
+            data.modAmtSrcOper = {};
+            data.modAmtSrcOper.index = ar.readUInt8();
+            data.modAmtSrcOper.type  = ar.readUInt8();
+            data.modTransOper = ar.readUInt16();
             
             root.data[i] = data;
                 
@@ -375,7 +424,8 @@ define(['util'], function (util) {
                 
             return data;
         };
-        
+
+                
         var parseSHDR1 = function(ar, root, i) {
             ar.seek(root.headPosition + i * 46);
             

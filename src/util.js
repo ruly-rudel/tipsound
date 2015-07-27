@@ -117,7 +117,7 @@ define(function () {
         {
             var i = readInt(2);
             if(i > 32767) {
-                return i - 32768;
+                return i - 65536;
             } else {
                 return i;
             }
