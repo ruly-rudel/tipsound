@@ -503,7 +503,7 @@ define(['util'], function (util) {
 
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
-            frequency: 880,
+            frequency: 44100,
             Q: 0.0001
         };
 
@@ -604,7 +604,12 @@ define(['util'], function (util) {
     ts.ModBuffer = function () {
         var that = {};
         that.parameter = {
-            buffer: null
+            buffer: null,
+            playbackRate: 1,
+            detune: 0,
+            loop: false,
+            loopStart: 0,
+            loopEnd: 0
         };
 
         var b = ts.ctx.createBufferSource();
@@ -613,6 +618,12 @@ define(['util'], function (util) {
 
         that.start = function (t) {
             b.buffer = that.parameter.buffer;
+            b.playbackRate.setValueAtTime(that.parameter.playbackRate, t);
+            b.detune.setValueAtTime(that.parameter.detune, t);
+            b.loop = that.parameter.loop;
+            b.loopStart = that.parameter.loopStart;
+            b.loopEnd = that.parameter.loopEnd;
+            
             b.start(t);
 
             return that;
@@ -625,11 +636,90 @@ define(['util'], function (util) {
         return that;
     };
     
+    ts.ModSF2Buffer = function () {
+        var that = {};
+
+        var buf = ts.ModBuffer();
+        var bqf = ts.ModBqf();
+        var env = ts.ModEnv();
+
+        // parameter prototype
+        that.parameter = {
+            buf: buf.parameter,
+            bqf: bqf.parameter,
+            env: env.parameter
+        };
+
+        bqf.connect(env.input);
+        buf.connect(bqf.input);
+
+        that.connect = function (dist) { env.connect(dist); };
+        that.start = function (t) {
+            // bind parameters
+            buf.parameter = that.parameter.buf;
+            bqf.parameter = that.parameter.bqf;
+            env.parameter = that.parameter.env;
+
+            buf.start(t);
+            bqf.start(t);
+            env.start(t);
+            return that;
+        };
+        that.stop = function (t) {
+            buf.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
+            env.stop(t);
+            return that;
+        };
+
+        return that;
+    };
+    
+    ts.ModSF2 = function (sf2) {
+        var that = {};
+
+        var sf2buf = ts.ModSF2Buffer();
+        
+        var apiano = sf2.readPreset(52);
+        var pgen = 0;
+        var igen = 4;
+        var shdr = apiano.pbag.pgen[pgen].instrument.ibag.igen[igen].shdr;
+        var buf = ts.ctx.createBuffer(1, shdr.end, shdr.sampleRate);
+        buf.copyToChannel(shdr.sample, 0);
+        
+        // parameter prototype
+        that.parameter = {};
+
+        that.connect = function (dist) { sf2buf.connect(dist); };
+        that.start = function (t, note) {
+            // bind parameters
+            sf2buf.parameter.buf.buffer = buf;
+            sf2buf.parameter.buf.loopStart = shdr.startloop / shdr.sampleRate;
+            sf2buf.parameter.buf.loopEnd = shdr.endloop / shdr.sampleRate;
+            sf2buf.parameter.buf.loop = apiano.pbag.pgen[pgen].instrument.ibag.igen[igen].sampleModes == 1 ? true : false;
+            sf2buf.parameter.buf.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
+            
+            sf2buf.start(t);
+            
+            return that;
+        };
+        that.stop = function (t) {
+            sf2buf.stop(t);     // ad-hock scale factor *4
+            return that;
+        };
+        that.dispose = function(t) {
+            
+        }
+
+        return that;
+    };
+    
+    
+    
     ts.ModPolySeq = function() {
         var that = {};
         that.parameter = {
             sequence: null,
-            delta: 0.1
+            delta: 0.5
         };
         
         var modPoly = null;

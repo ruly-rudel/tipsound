@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script type='text/javascript' src="vx.all.js"></script>
     <script type='text/javascript' data-main="init.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.17/require.min.js"></script>
     <title>tipsound.js</title>
 </head>
@@ -13,7 +14,7 @@
     </ul>
     -->
     <h2>control</h2>
-        <input type="button" id="play" value="play" data-bind="click: playChord"/>
+        <input type="button" id="play" value="play" data-bind="click: playChord, enable: prepared"/>
         <input type="button" id="stop" value="stop" data-bind="click: stop" />
     <h2>parameters</h2>
     <h3>tempo</h3>

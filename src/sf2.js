@@ -306,11 +306,22 @@ define(['util'], function (util) {
             
             return result;
         };
-                
+        
         var readSHDR1 = function(i) {
-            var shdr = that.sfbk.pdta.child.shdr;
+            var shdr = that.sfbk.pdta.child.shdr;            
+            var r = parseSHDR1(ar, shdr, i);
             
-            return parseSHDR1(ar, shdr, i);
+            r.end -= r.start;
+            r.startloop -= r.start;
+            r.endloop -= r.start;
+            r.sample = new Float32Array(r.end);
+            ar.seek(that.sfbk.sdta.child.smpl.headPosition + r.start * 2)
+            for(var j = 0; j < r.end; j++) {
+                r.sample[j] = ar.readInt16() / 32768;
+            }
+            r.start = 0;
+            
+            return r;            
         };
 
 

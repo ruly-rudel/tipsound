@@ -1,21 +1,26 @@
 // Main viewmodel class
-define(['knockout-3.3.0', 'model'], function (ko, model) {
+define(['knockout-3.3.0', 'model', 'sf2'], function (ko, model, SF2) {
     "use strict";
 
     return function () { // ViewModel constructor
+        var self = this;
+        
+        this.prepared = ko.observable(false);
+        
+        _.XB('http://gauzau.s30.xrea.com/A320U.sf2', function(r) {
+            self.sf2 = SF2.createFromArrayBuffer(r);
+            self.sf2.parseHeader();
+            self.prepared(true);
+        });
+        
         this.synth = ko.observable(
-            "fg.register(\"asynth\", ts.ModPoly(ts.ModAsynth));\n" +
+            "fg.register(\"piano\", ts.ModPoly(function() { return ts.ModSF2(vm.sf2); }));\n" +
             "fg.register(\"seq\", ts.ModPolySeq());\n\n" +
     
-            "fg.connect(\"seq\", \"asynth\");\n" +
-            "fg.connect(\"asynth\", \"destination\");\n\n" +
+            "fg.connect(\"seq\", \"piano\");\n" +
+            "fg.connect(\"piano\", \"destination\");\n\n" +
             
-            "fg.module.asynth.parameter.mono.env.attack = 0.0;\n" +
-            "fg.module.asynth.parameter.mono.env.decay = 0.4;\n" +
-            "fg.module.asynth.parameter.mono.env.sustain = 0.0;\n" +
-            "fg.module.asynth.parameter.mono.env.release = 0.0;\n\n" +
-            "fg.module.asynth.parameter.mono.bqf.freqScale = 1.6;\n" +
-            "fg.module.asynth.parameter.mono.bqf.Q = 0.0001;\n\n" +
+            "fg.module.piano.parameter.gain.gain(vm.volume());\n\n" +
     
             "var ca = vm.chord().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
             "var va = vm.breakValue().split(/[\\s|]/).filter(function (s) { return s != \"\"; });\n" +
@@ -43,13 +48,13 @@ define(['knockout-3.3.0', 'model'], function (ko, model) {
 
         this.playChord = function () {
             model.build(this.synth(), this);
-            this.volume.subscribe(model.parameter.asynth.gain.gain);
+            this.volume.subscribe(model.parameter.piano.gain.gain);
         
             model.play();
         };
         this.recycle = function () { model.recycle(); };
         this.stop = function() { model.stop(); };
 
-        this.volume(0.5);
+        this.volume(0.3);
     };
 });
