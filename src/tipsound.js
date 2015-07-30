@@ -474,18 +474,34 @@ define(['util'], function (util) {
         var that = {};
         that.input = ts.ctx.createGain();
         that.parameter = {
-            attack: 0,
+            gain: 1,
+            attack: 0.01,   // ad-hock value for noise elimination
             decay: 0,
             sustain: 1,
-            release: 0
+            release: 0.01   // ad-hock value for noise eliminatino
         };
 
         that.connect = function (dist) { that.input.connect(dist); };
         that.start = function (t) {
-            that.input.gain.setValueAtTime(0, t);    // zero
-            that.input.gain.linearRampToValueAtTime(1, t + that.parameter.attack); // attack
-            that.input.gain.setTargetAtTime(that.parameter.sustain, t + that.parameter.attack, that.parameter.decay); // decay, sustain
-
+            if(that.parameter.attack == 0) {
+                if(that.parameter.decay == 0) {
+                    that.input.gain.setValueAtTime(that.parameter.sustain * that.parameter.gain, t);
+                } else {
+                    that.input.gain.setValueAtTime(that.parameter.gain, t);
+                    that.input.gain.setTargetAtTime(that.parameter.sustain * that.parameter.gain, t, that.parameter.decay / 10); // decay, sustain, ad-hock /10
+//                    that.input.gain.linearRampToValueAtTime(that.parameter.sustain * that.parameter.gain, t + that.parameter.decay); // decay, sustain, ad-hock /10
+                }
+            } else {
+                that.input.gain.setValueAtTime(0, t);    // zero
+                if(that.parameter.decay == 0) {
+                    that.input.gain.linearRampToValueAtTime(that.parameter.sustain * that.parameter.gain, t + that.parameter.attack); // decay
+                } else {
+                    that.input.gain.linearRampToValueAtTime(that.parameter.gain, t + that.parameter.attack); // attack
+                    that.input.gain.setTargetAtTime(that.parameter.sustain * that.parameter.gain, t + that.parameter.attack, that.parameter.decay / 10); // decay, sustain, ad-hock /10
+//                    that.input.gain.linearRampToValueAtTime(that.parameter.sustain * that.parameter.gain, t + that.parameter.attack + that.parameter.decay); // decay, sustain, ad-hock /10
+                }
+            }
+            
             return that;
         };
         that.stop = function (t) {
@@ -642,7 +658,8 @@ define(['util'], function (util) {
         var osc = ts.ModBuffer();
         var bqf = ts.ModBqf();
         var env = ts.ModEnv();
-
+        var run = false;
+        
         // parameter prototype
         that.parameter = {
             osc: osc.parameter,
@@ -663,11 +680,14 @@ define(['util'], function (util) {
             osc.start(t);
             bqf.start(t);
             env.start(t);
+            run = true;
             return that;
         };
         that.stop = function (t) {
-            osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
-            env.stop(t);
+            if(run) {
+                osc.stop(t + that.parameter.env.release * 10);     // ad-hock scale factor *10
+                env.stop(t);                
+            }
             return that;
         };
 
@@ -678,13 +698,6 @@ define(['util'], function (util) {
         var that = {};
 
         var wavosc = ts.ModWavOsc();
-        /*
-        var apiano = sf2.readPreset(52);
-        var gen = 4;
-        var shdr = apiano.gen[gen].shdr;
-        var buf = ts.ctx.createBuffer(1, shdr.end, shdr.sampleRate);
-        buf.copyToChannel(shdr.sample, 0);
-        */
         var shdr = gen.shdr;
         
         // parameter prototype
@@ -692,19 +705,36 @@ define(['util'], function (util) {
 
         that.connect = function (dist) { wavosc.connect(dist); };
         that.start = function (t, note) {
-            // bind parameters
-            wavosc.parameter.osc.buffer = buf;
-            wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
-            wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
-            wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
-            wavosc.parameter.osc.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
-            
-            wavosc.start(t);
+            var vel = 60;
+            if(note >= gen.keyRange.lo && note <= gen.keyRange.hi &&
+               vel >= gen.velRange.lo && vel <= gen.velRange.hi) {
+                // bind parameters
+                wavosc.parameter.osc.buffer = buf;
+                wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
+                wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
+                wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
+                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
+                if(gen.fineTune !== undefined) {
+                    wavosc.parameter.osc.detune = gen.fineTune;
+                }
+                if(gen.initialAttenuation !== undefined) {
+                    wavosc.parameter.env.gain = Math.pow(10, -gen.initialAttenuation / 200);
+                }
+                if(gen.sustainVolEnv !== undefined) {
+                    wavosc.parameter.env.sustain = Math.pow(10, -gen.sustainVolEnv / 200);
+                }
+                if(gen.decayVolEnv !== undefined) {
+                    wavosc.parameter.env.decay = Math.pow(2, gen.decayVolEnv / 1200);
+                }
+                console.log(JSON.stringify(wavosc.parameter.env, null, 4));
+                
+                wavosc.start(t);                
+            }
             
             return that;
         };
         that.stop = function (t) {
-            wavosc.stop(t);     // ad-hock scale factor *4
+            wavosc.stop(t);
             return that;
         };
         that.dispose = function(t) {
@@ -720,7 +750,7 @@ define(['util'], function (util) {
         var that = {};
         that.parameter = {
             sequence: null,
-            delta: 0.5
+            delta: 0.2
         };
         
         var modPoly = null;
