@@ -600,7 +600,7 @@ define(['util'], function (util) {
 
         return that;
     };
-
+    
     ts.ModBuffer = function () {
         var that = {};
         that.parameter = {
@@ -636,37 +636,37 @@ define(['util'], function (util) {
         return that;
     };
     
-    ts.ModSF2Buffer = function () {
+    ts.ModWavOsc = function () {
         var that = {};
 
-        var buf = ts.ModBuffer();
+        var osc = ts.ModBuffer();
         var bqf = ts.ModBqf();
         var env = ts.ModEnv();
 
         // parameter prototype
         that.parameter = {
-            buf: buf.parameter,
+            osc: osc.parameter,
             bqf: bqf.parameter,
             env: env.parameter
         };
 
         bqf.connect(env.input);
-        buf.connect(bqf.input);
+        osc.connect(bqf.input);
 
         that.connect = function (dist) { env.connect(dist); };
         that.start = function (t) {
             // bind parameters
-            buf.parameter = that.parameter.buf;
+            osc.parameter = that.parameter.osc;
             bqf.parameter = that.parameter.bqf;
             env.parameter = that.parameter.env;
 
-            buf.start(t);
+            osc.start(t);
             bqf.start(t);
             env.start(t);
             return that;
         };
         that.stop = function (t) {
-            buf.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
+            osc.stop(t + that.parameter.env.release * 4);     // ad-hock scale factor *4
             env.stop(t);
             return that;
         };
@@ -674,35 +674,37 @@ define(['util'], function (util) {
         return that;
     };
     
-    ts.ModSF2 = function (sf2) {
+    ts.ModSF2 = function (gen, buf) {
         var that = {};
 
-        var sf2buf = ts.ModSF2Buffer();
-        
+        var wavosc = ts.ModWavOsc();
+        /*
         var apiano = sf2.readPreset(52);
         var gen = 4;
         var shdr = apiano.gen[gen].shdr;
         var buf = ts.ctx.createBuffer(1, shdr.end, shdr.sampleRate);
         buf.copyToChannel(shdr.sample, 0);
+        */
+        var shdr = gen.shdr;
         
         // parameter prototype
         that.parameter = {};
 
-        that.connect = function (dist) { sf2buf.connect(dist); };
+        that.connect = function (dist) { wavosc.connect(dist); };
         that.start = function (t, note) {
             // bind parameters
-            sf2buf.parameter.buf.buffer = buf;
-            sf2buf.parameter.buf.loopStart = shdr.startloop / shdr.sampleRate;
-            sf2buf.parameter.buf.loopEnd = shdr.endloop / shdr.sampleRate;
-            sf2buf.parameter.buf.loop = apiano.gen[gen].sampleModes == 1 ? true : false;
-            sf2buf.parameter.buf.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
+            wavosc.parameter.osc.buffer = buf;
+            wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
+            wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
+            wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
+            wavosc.parameter.osc.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
             
-            sf2buf.start(t);
+            wavosc.start(t);
             
             return that;
         };
         that.stop = function (t) {
-            sf2buf.stop(t);     // ad-hock scale factor *4
+            wavosc.stop(t);     // ad-hock scale factor *4
             return that;
         };
         that.dispose = function(t) {

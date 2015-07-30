@@ -14,7 +14,12 @@ define(['knockout-3.3.0', 'model', 'sf2'], function (ko, model, SF2) {
         });
         
         this.synth = ko.observable(
-            "fg.register(\"piano\", ts.ModPoly(function() { return ts.ModSF2(vm.sf2); }));\n" +
+            "var p = vm.sf2.readPreset(52);\n" +
+            "var gen = vm.sf2.readPreset(52).gen[4];\n" +
+            "var buf = ts.ctx.createBuffer(1, gen.shdr.end, gen.shdr.sampleRate);\n" +
+            "buf.copyToChannel(gen.shdr.sample, 0);\n\n" +
+            
+            "fg.register(\"piano\", ts.ModPoly(function() { return ts.ModSF2(gen, buf); }));\n" +
             "fg.register(\"seq\", ts.ModPolySeq());\n\n" +
     
             "fg.connect(\"seq\", \"piano\");\n" +
