@@ -680,9 +680,8 @@ define(['util'], function (util) {
         var sf2buf = ts.ModSF2Buffer();
         
         var apiano = sf2.readPreset(52);
-        var pgen = 0;
-        var igen = 4;
-        var shdr = apiano.pbag.pgen[pgen].instrument.ibag.igen[igen].shdr;
+        var gen = 4;
+        var shdr = apiano.gen[gen].shdr;
         var buf = ts.ctx.createBuffer(1, shdr.end, shdr.sampleRate);
         buf.copyToChannel(shdr.sample, 0);
         
@@ -695,7 +694,7 @@ define(['util'], function (util) {
             sf2buf.parameter.buf.buffer = buf;
             sf2buf.parameter.buf.loopStart = shdr.startloop / shdr.sampleRate;
             sf2buf.parameter.buf.loopEnd = shdr.endloop / shdr.sampleRate;
-            sf2buf.parameter.buf.loop = apiano.pbag.pgen[pgen].instrument.ibag.igen[igen].sampleModes == 1 ? true : false;
+            sf2buf.parameter.buf.loop = apiano.gen[gen].sampleModes == 1 ? true : false;
             sf2buf.parameter.buf.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
             
             sf2buf.start(t);

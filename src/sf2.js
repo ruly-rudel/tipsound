@@ -157,19 +157,31 @@ define(['util'], function (util) {
             var r = {
                 presetName: phdr.data[n].presetName,
                 preset: phdr.data[n].preset,
-                bank: phdr.data[n].bank
+                bank: phdr.data[n].bank,
+                gen: [],
+                mod: []
             }
             
             // PBAGs
-            r.pbag = {
-                pgen: [],
-                pmod: []
+            var pgen_global = {
+                keyRange: { lo: 0, hi: 127 },
+                velRange: { lo: 1, hi: 127 }                
             };
+            var pmod_global = {};
             for(var i = phdr.data[n].presetBagNdx; i < phdr.data[n + 1].presetBagNdx; i++) {
                 var pbag0 = parsePBAG1(ar, pbag, i);
                 var pbag1 = parsePBAG1(ar, pbag, i + 1);
-                r.pbag.pgen.push(createHashGenFromPgenArray(readPGEN1(pbag0.genNdx, pbag1.genNdx)));
-                r.pbag.pmod.push(readPMOD1(pbag0.modNdx, pbag1.modNdx));
+                var pmod = readPMOD1(pbag0.modNdx, pbag1.modNdx, pmod_global);
+                var pmod_local = Array.prototype.concat(pmod_global, pmod);
+                var pgen = readPGEN1(pbag0.genNdx, pbag1.genNdx, pgen_global, pmod_local);
+                if(pgen["instrument"] === undefined) {
+                    pgen_global = pgen;
+                    pmod_global = pmod;
+                } else {
+                    r.gen = Array.prototype.concat(r.gen, pgen.instrument.ibag.igen);
+                    r.mod = Array.prototype.concat(r.mod, pgen.instrument.ibag.imod);
+                }
+//                r.mod.push(readPMOD1(pbag0.modNdx, pbag1.modNdx));
             }
             
             return r;
@@ -195,28 +207,29 @@ define(['util'], function (util) {
             )).buffer);
         }
         
-        var readPGEN1 = function(b, e) {
+        var readPGEN1 = function(b, e, g, gm) {
             var pgen = that.sfbk.pdta.child.pgen;
-            var result = [];
+            var global = _.O(g, true);
+            var global_m = _.O(gm, true);
+            var result = _.O(g, true);
             if(b != e) {
                 for(var i = b; i < e; i++) {
-                    var r = {
-                        "pgen": parsePGEN1(ar, pgen, i)
-                    }
-                    if(r.pgen.inst == "instrument") {
-                        r.inst = readINST1(r.pgen.genAmount);
-                    }
-                    
-                    result.push(r);
+                    var r = parsePGEN1(ar, pgen, i);
+                    if(r.inst == "instrument") {
+                        global = _.O(result, true);
+                        result[r.inst] = readINST1(r.genAmount, global, global_m);
+                    } else {
+                        result[r.inst] = r.genAmount;
+                    }                    
                 }                
             }
             
             return result;
         };
         
-        var readPMOD1 = function(b, e) {
+        var readPMOD1 = function(b, e, g) {
             var pmod = that.sfbk.pdta.child.pmod;
-            var result = [];
+            var result = _.O(g, true);
             if(b != e) {
                 for(var i = b; i < e; i++) {
                     result.push(parseMOD1(ar, pmod, i));
@@ -226,7 +239,7 @@ define(['util'], function (util) {
             return result;
         };
         
-        var readINST1 = function(i) {
+        var readINST1 = function(i, g, gm) {
             var inst = that.sfbk.pdta.child.inst;
             var ibag = that.sfbk.pdta.child.ibag;
             var inst0 = parseINST1(ar, inst, i);
@@ -235,6 +248,8 @@ define(['util'], function (util) {
             var r = {
                 "instName": inst0.instName
             };
+            var global = _.O(g, true);
+            var global_m = _.O(gm, true);
             
             // IBAGs
             r.ibag = {
@@ -245,59 +260,37 @@ define(['util'], function (util) {
                 var ibag0 = parseIBAG1(ar, ibag, i);
                 var ibag1 = parseIBAG1(ar, ibag, i + 1);
                 
-                r.ibag.igen.push(
-                    createHashGenFromIgenArray(
-                        readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx)));
-                r.ibag.imod.push(readIMOD1(ibag0.instModNdx, ibag1.instModNdx));
+                var igen = readIGEN1(ibag0.instGenNdx, ibag1.instGenNdx, global);
+                var imod = readIMOD1(ibag0.instModNdx, ibag1.instModNdx, global_m);
+                if(igen["sampleID"] === undefined) {    // global parameter
+                    global = igen;
+                    global_m = imod;
+                } else {
+                    r.ibag.igen.push(igen);
+                    r.ibag.imod.push(imod);
+                }
             }
             
             return r;
         }
-        
-        var createHashGenFromIgenArray = function(igens) {
-            var hash = {};
-            igens.forEach(function(igen) {
-                hash[igen.igen.inst] = igen.igen.genAmount;
-                if(igen.igen.inst == 'sampleID') {
-                    hash['shdr'] = igen.shdr;
-                }
-            });
-            
-            return hash;
-        }
-        
-        var createHashGenFromPgenArray = function(pgens) {
-            var hash = {};
-            pgens.forEach(function(pgen) {
-                hash[pgen.pgen.inst] = pgen.pgen.genAmount;
-                if(pgen.pgen.inst == 'instrument') {
-                    hash['instrument'] = pgen.inst;
-                }
-            });
-            
-            return hash;
-        }
-        
-        var readIGEN1 = function(b, e) {
-            var igen = that.sfbk.pdta.child.igen;
-            var result = [];
-            for(var i = b; i < e; i++) {
-                var r = {
-                    "igen": parseIGEN1(ar, igen, i)
-                };
-                if(r.igen.inst == "sampleID") {
-                    r.shdr = readSHDR1(r.igen.genAmount);
-                }
                 
-                result.push(r);
+        var readIGEN1 = function(b, e, g) {
+            var igen = that.sfbk.pdta.child.igen;
+            var result = _.O(g, true);
+            for(var i = b; i < e; i++) {
+                var r = parseIGEN1(ar, igen, i);
+                result[r.inst] = r.genAmount;
+                if(r.inst == "sampleID") {
+                    result.shdr = readSHDR1(r.genAmount);
+                }
             }
             
-            return result;            
+            return result;
         };
         
-        var readIMOD1 = function(b, e) {
+        var readIMOD1 = function(b, e, g) {
             var imod = that.sfbk.pdta.child.imod;
-            var result = [];
+            var result = _.O(g, true);
             if(b != e) {
                 for(var i = b; i < e; i++) {
                     result.push(parseMOD1(ar, imod, i));
