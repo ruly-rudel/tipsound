@@ -519,7 +519,7 @@ define(['util'], function (util) {
 
         that.input = ts.ctx.createBiquadFilter();
         that.parameter = {
-            frequency: 44100,
+            frequency: 20000,
             Q: 0.0001
         };
 
@@ -721,12 +721,13 @@ define(['util'], function (util) {
                vel >= gen.velRange.lo && vel <= gen.velRange.hi) {
                    
                 var rootKey = shdr.originalPitch;
+                var fineTune = 0;
                    
                 for(var g in gen) {
                     var v = gen[g];
                     switch(g) {
                         case 'fineTune':
-                            wavosc.parameter.osc.detune = Math.pow(2, v / 1200);
+                            fineTune = v / 1200;
                             break;
                             
                         case 'initialAttenuation':
@@ -757,6 +758,10 @@ define(['util'], function (util) {
                             rootKey = v;
                             break;
                             
+                        case 'initialFilterFc':
+                            wavosc.parameter.bqf.frequency = Math.pow(2, (v - 13500) / 1200) * 20000;
+                            break;
+                            
                         case 'coarseTune':
                             note += v;
                             
@@ -770,7 +775,7 @@ define(['util'], function (util) {
                 wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
                 wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
                 wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
-                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - rootKey) / 12);
+                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - rootKey) / 12 + fineTune);
                 
                 console.log(JSON.stringify(wavosc.parameter.env, null, 4));
                 
