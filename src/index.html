@@ -17,6 +17,8 @@
         <input type="button" id="play" value="play" data-bind="click: playChord, enable: prepared"/>
         <input type="button" id="stop" value="stop" data-bind="click: stop" />
     <h2>parameters</h2>
+    <h3>presets</h3>
+        <select data-bind="options: presetList, value: preset, valueAllowUnset: false" size="1"></select>
     <h3>tempo</h3>
         <input type="text" id="tempo" data-bind="value: tempo" />
     <h3>volume</h3>

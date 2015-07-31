@@ -167,7 +167,7 @@ define(['util'], function (util) {
                 keyRange: { lo: 0, hi: 127 },
                 velRange: { lo: 1, hi: 127 }                
             };
-            var pmod_global = {};
+            var pmod_global = [];
             for(var i = phdr.data[n].presetBagNdx; i < phdr.data[n + 1].presetBagNdx; i++) {
                 var pbag0 = parsePBAG1(ar, pbag, i);
                 var pbag1 = parsePBAG1(ar, pbag, i + 1);

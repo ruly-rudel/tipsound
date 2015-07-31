@@ -10,11 +10,13 @@ define(['knockout-3.3.0', 'model', 'sf2'], function (ko, model, SF2) {
         _.XB('http://gauzau.s30.xrea.com/A320U.sf2', function(r) {
             self.sf2 = SF2.createFromArrayBuffer(r);
             self.sf2.parseHeader();
+            self.presetList(self.sf2.enumPresets());
+            self.preset(self.presetList()[52]);
             self.prepared(true);
         });
         
         this.synth = ko.observable(
-            "var p = vm.sf2.readPreset(52);\n" +
+            "var p = vm.sf2.readPreset(vm.presetList().indexOf(vm.preset()));\n" +
             "var buf = ts.ModSF2.prepareBuffer(p.gen);\n\n" +
             
             "fg.register(\"piano\", ts.ModPoly(function() { return ts.ModSF2(p.gen, buf); }));\n" +
@@ -45,6 +47,8 @@ define(['knockout-3.3.0', 'model', 'sf2'], function (ko, model, SF2) {
             "R4 [RTFS]4",
         ]);
         
+        this.preset = ko.observable();
+        this.presetList = ko.observable();
         this.tempo = ko.observable(180);
 
         this.volume = ko.observable();
