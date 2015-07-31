@@ -694,38 +694,84 @@ define(['util'], function (util) {
         return that;
     };
     
-    ts.ModSF2 = function (gen, buf) {
+    ts.ModSF2 = function (gens, bufs) {
         var that = {};
 
-        var wavosc = ts.ModWavOsc();
-        var shdr = gen.shdr;
+        var wavoscs = [];
+        for(var i = 0; i < gens.length; i++) {
+            wavoscs.push(ts.ModWavOsc());
+        }
         
         // parameter prototype
         that.parameter = {};
 
-        that.connect = function (dist) { wavosc.connect(dist); };
-        that.start = function (t, note) {
+        that.connect = function (dist) { wavoscs.forEach(function (w) { w.connect(dist); }); };
+
+        that.start = function(t, note) {
+            for(var i = 0; i < gens.length; i++ ) {
+                start1(wavoscs[i], gens[i], bufs[i], gens[i].shdr, t, note);
+            }
+            
+            return that;
+        }
+                
+        var start1 = function (wavosc, gen, buf, shdr, t, note) {
             var vel = 60;
             if(note >= gen.keyRange.lo && note <= gen.keyRange.hi &&
                vel >= gen.velRange.lo && vel <= gen.velRange.hi) {
+                   
+                var rootKey = shdr.originalPitch;
+                   
+                for(var g in gen) {
+                    var v = gen[g];
+                    switch(g) {
+                        case 'fineTune':
+                            wavosc.parameter.osc.detune = Math.pow(2, v / 1200);
+                            break;
+                            
+                        case 'initialAttenuation':
+                            wavosc.parameter.env.gain = Math.pow(10, -v / 200);
+                            break;
+                            
+                        case 'delayVolEnv':
+                            t += Math.pow(2, v / 1200);
+                            break;
+                            
+                        case 'attackVolEnv':
+                            wavosc.parameter.env.attack = Math.pow(2, v / 1200);
+                            break;
+                            
+                        case 'decayVolEnv':
+                            wavosc.parameter.env.decay = Math.pow(2, v / 1200);
+                            break;
+                            
+                        case 'sustainVolEnv':
+                            wavosc.parameter.env.sustain = Math.pow(10, -v / 200);
+                            break;
+                            
+                        case 'releaseVolEnv':
+                            wavosc.parameter.env.release = Math.pow(2, v / 1200) / 10;
+                            break;                            
+                            
+                        case 'overridingRootKey':
+                            rootKey = v;
+                            break;
+                            
+                        case 'coarseTune':
+                            note += v;
+                            
+                        default:
+                            break;
+                    }
+                }
+                   
                 // bind parameters
                 wavosc.parameter.osc.buffer = buf;
                 wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
                 wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
                 wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
-                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - shdr.originalPitch) / 12);
-                if(gen.fineTune !== undefined) {
-                    wavosc.parameter.osc.detune = gen.fineTune;
-                }
-                if(gen.initialAttenuation !== undefined) {
-                    wavosc.parameter.env.gain = Math.pow(10, -gen.initialAttenuation / 200);
-                }
-                if(gen.sustainVolEnv !== undefined) {
-                    wavosc.parameter.env.sustain = Math.pow(10, -gen.sustainVolEnv / 200);
-                }
-                if(gen.decayVolEnv !== undefined) {
-                    wavosc.parameter.env.decay = Math.pow(2, gen.decayVolEnv / 1200);
-                }
+                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - rootKey) / 12);
+                
                 console.log(JSON.stringify(wavosc.parameter.env, null, 4));
                 
                 wavosc.start(t);                
@@ -733,8 +779,9 @@ define(['util'], function (util) {
             
             return that;
         };
+        
         that.stop = function (t) {
-            wavosc.stop(t);
+            wavoscs.forEach(function(w) { w.stop(t); });
             return that;
         };
         that.dispose = function(t) {
@@ -742,6 +789,17 @@ define(['util'], function (util) {
         }
 
         return that;
+    };
+    
+    ts.ModSF2.prepareBuffer = function(gens) {
+        var bufs = [];
+        gens.forEach(function(gen) {
+            var buf = ts.ctx.createBuffer(1, gen.shdr.end, gen.shdr.sampleRate);
+            buf.copyToChannel(gen.shdr.sample, 0);
+            bufs.push(buf);
+        });
+        
+        return bufs;
     };
     
     
