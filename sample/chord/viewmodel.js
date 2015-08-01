@@ -1,5 +1,5 @@
 // Main viewmodel class
-define(['knockout-3.3.0', 'model', 'sf2'], function (ko, model, SF2) {
+define(['lib/knockout-3.3.0', 'sample/chord/model', 'js/sf2'], function (ko, model, SF2) {
     "use strict";
 
     return function () { // ViewModel constructor

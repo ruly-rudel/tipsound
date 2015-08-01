@@ -1,4 +1,4 @@
-define(['util'], function (util) {
+define(['js/util'], function (util) {
     "use strict";
 
     var sf2 = {};

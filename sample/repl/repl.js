@@ -1,4 +1,8 @@
-require(['knockout-3.3.0', 'tipsound', 'util', 'sf2', 'domReady!'], function (ko, ts, util, SF2) {
+require.config({
+	baseUrl: "."
+});
+
+require(['lib/knockout-3.3.0', 'js/tipsound', 'js/util', 'js/sf2', 'js/domReady!'], function (ko, ts, util, SF2) {
 	// view model
 	var self = {
 			//code: ko.observable("return ts.parseChord('C');"),

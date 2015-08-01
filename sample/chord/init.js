@@ -1,4 +1,7 @@
+require.config({
+	baseUrl: "."
+});
 
-require(['knockout-3.3.0', 'viewmodel', 'domReady!'], function (ko, ViewModel) {
+require(['lib/knockout-3.3.0', 'sample/chord/viewmodel', 'js/domReady!'], function (ko, ViewModel) {
     ko.applyBindings(new ViewModel());
 });

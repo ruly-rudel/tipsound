@@ -1,4 +1,4 @@
-define(['tipsound'], function (ts) {	// model
+define(['js/tipsound'], function (ts) {	// model
     "use strict";
     var that = {};
     that.ts = ts;
