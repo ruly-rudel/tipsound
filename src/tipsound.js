@@ -721,13 +721,17 @@ define(['util'], function (util) {
                vel >= gen.velRange.lo && vel <= gen.velRange.hi) {
                    
                 var rootKey = shdr.originalPitch;
-                var fineTune = 0;
+                var tune = 0;
                    
                 for(var g in gen) {
                     var v = gen[g];
                     switch(g) {
+                        case 'coarseTune':
+                            tune += v;
+                            break;
+                            
                         case 'fineTune':
-                            fineTune = v / 1200;
+                            tune += v / 1200;
                             break;
                             
                         case 'initialAttenuation':
@@ -775,7 +779,7 @@ define(['util'], function (util) {
                 wavosc.parameter.osc.loopStart = shdr.startloop / shdr.sampleRate;
                 wavosc.parameter.osc.loopEnd = shdr.endloop / shdr.sampleRate;
                 wavosc.parameter.osc.loop = gen.sampleModes == 1 ? true : false;
-                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - rootKey) / 12 + fineTune);
+                wavosc.parameter.osc.playbackRate = Math.pow(2,(note - rootKey) / 12 + tune);
                 
                 console.log(JSON.stringify(wavosc.parameter.env, null, 4));
                 
