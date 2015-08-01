@@ -766,9 +766,6 @@ define(['util'], function (util) {
                             wavosc.parameter.bqf.frequency = Math.pow(2, (v - 13500) / 1200) * 20000;
                             break;
                             
-                        case 'coarseTune':
-                            note += v;
-                            
                         default:
                             break;
                     }
@@ -965,8 +962,6 @@ define(['util'], function (util) {
         
         return fg;
     };
-
-
 
     return ts;
 });
